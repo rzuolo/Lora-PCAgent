@@ -4,7 +4,6 @@ sys.path.insert(0,'/home/ceotuser/source/Lora-PCAgent/drl-optimizer/core')
 sys.path.insert(0,'/home/ceotuser/source/Lora-PCAgent')
 #sys.path.remove('/home/ceotuser/anaconda3/lib/python3.9/site-packages')
 
-print(sys.path)
 from DNN import ACDNN
 from PCAgent import PCAgent
 #import yourenv
@@ -27,17 +26,18 @@ action_type = np.int16
 
 
 ####### training options to be used by the training manager #######
-num_episodes = 3500
-episode_length = 100
+num_episodes = 2000
+episode_length = 30
 log_file = 'scenario_name_log_file.txt'
 
 # neural nets
 device = 'gpu'
-lr = 0.0001
+lr = 0.001
 
 actor_critic = ACDNN(
             in_features=5,
-            hidden_size=1024,
+            hidden_size=2048,
+            #hidden_size=1024,
             #hidden_size=256,
             #hidden_size=512,
             lr=lr,
