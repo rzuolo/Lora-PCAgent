@@ -1,7 +1,10 @@
 #%% 
 import sys,os
-sys.path.insert(0,'/home/rzuolo/Python-MPN-branch02/drl-optimizer/core')
+sys.path.insert(0,'/home/ceotuser/source/Lora-PCAgent/drl-optimizer/core')
+sys.path.insert(0,'/home/ceotuser/source/Lora-PCAgent')
+#sys.path.remove('/home/ceotuser/anaconda3/lib/python3.9/site-packages')
 
+print(sys.path)
 from DNN import ACDNN
 from PCAgent import PCAgent
 #import yourenv
