@@ -1,0 +1,29 @@
+self.state --> (8, 4) 
+
+cluster			features	
+	0			[cluster pos 0, buffer, time, time limit] (integers)
+				.
+				.
+				.
+	7			[cluster pos 7, buffer, time, time limit]
+
+
+self.mask --> (7, 1)
+
+
+
+- send to the model, state and masks
+
+- the model will give the env an action
+
+
+// 1- recieve an action
+action = 3
+
+
+// 2- check if the action means stop/reset/something worng, .... etc
+
+
+// if things are ok (react to the action)
+// 3- update the state according to the action
+self.state[action, features to

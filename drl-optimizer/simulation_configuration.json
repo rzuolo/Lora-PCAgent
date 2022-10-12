@@ -1,0 +1,42 @@
+{
+
+    "date_time": "${now()}",
+    "description": "Solving RRM problem using DRL agent",
+    "mode": "test", 
+    "results_file": "results.json", 
+
+    "network":
+        {   
+            "n_prbs": [1],
+            "f_carrier_mhz": [2300],
+            "interference_dbm": [-105],
+            "ue_v_mean": [2.5],
+            "ue_v_var": [0.25],
+            "SINR_COEFF": [8],
+            "buffer_max_size": [8, 16, 32],
+            "n_ues": [12, 16, 20, 32, 40, 60, 80, 100],
+            "eirp_dbm": [14, 23, 30, 42, 46],
+            "it": [1],
+            "se_upper_bound": [15, 9.6],
+            "bw_mhz": [20, 5]
+        },
+
+    "PC_agent":
+    {
+        "device": "cpu",
+        "lr": 0.0001,
+        "in_features": 4,
+        "hidden_size": 1024,
+        "discount_factor": 0.99,
+        "entropy_factor": 0.001,
+        "model_file": "pc_mac.pt"
+    },
+
+    "training_manager":
+    {
+        "num_episodes": 50,
+        "episode_length": 500, 
+        "log_file" : "scenario_name_log_file.txt"
+    }
+
+}
