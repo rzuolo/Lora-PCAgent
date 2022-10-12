@@ -1,7 +1,13 @@
 #%% 
 import sys,os
-sys.path.insert(0,'/home/ceotuser/source/Lora-PCAgent/drl-optimizer/core')
-sys.path.insert(0,'/home/ceotuser/source/Lora-PCAgent')
+
+directory = os.getcwd()
+parentdirectory = os.path.abspath(os.path.join(directory, os.pardir))
+
+#sys.path.insert(0,'/home/ceotuser/source/Lora-PCAgent/drl-optimizer/core')
+sys.path.insert(0,directory+'/core')
+sys.path.insert(0,parentdirectory)
+#sys.path.insert(0,'/home/ceotuser/source/Lora-PCAgent')
 #sys.path.remove('/home/ceotuser/anaconda3/lib/python3.9/site-packages')
 
 from DNN import ACDNN
@@ -36,8 +42,8 @@ lr = 0.001
 
 actor_critic = ACDNN(
             in_features=5,
-            hidden_size=2048,
-            #hidden_size=1024,
+            #hidden_size=2048,
+            hidden_size=1024,
             #hidden_size=256,
             #hidden_size=512,
             lr=lr,
@@ -45,7 +51,7 @@ actor_critic = ACDNN(
 
 # agent
 discount_factor = 0.99
-entropy_factor = 0.01
+entropy_factor = 0.001
 #entropy_factor = 10000000000
 
 agent = PCAgent(state_size=state_size, 
