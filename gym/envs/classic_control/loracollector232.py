@@ -35,6 +35,7 @@ class LoraCollector232(Env):
        
         # Maximum flags for common timer, episode, airbourn cargo, etc
         self.max_time = 862 #game time insteps
+        #self.max_time = 868
         self.max_tick = 540 #ttl in timesteps
         self.max_cargo = 3000 #maximum allowed buffer (large number because is not in use currently)
         self.period =  200  #app period in seconds (this is the frequency that every node will be sending packets).
@@ -307,8 +308,11 @@ class LoraCollector232(Env):
         for x in range(8): 
             if self.state[x][0] == 1:
                 pos_coming  = x
+                #time_coming = self.state[x][1] ## remove this if time difference is based on unit step costs
+        #version based on cost time         
         time_coming = self.time_elapsed  
-           
+        
+        
         pos_going,time_going = self.move(time_coming,pos_coming,turn) #moving to new position and time
         #print("LOG7 timecoming ",timecoming[turn]," poscoming ", coming[turn])
         #print("LOG7 timegoing ",time_going," posgoing ", pos_going)
@@ -317,15 +321,21 @@ class LoraCollector232(Env):
             over = 1
             #return self.state,gain,over,self.masks
         
+        
+        #update the new time current cost + time elpased so far
+        #self.time_elapsed = self.time_elapsed + time_going
+
                   
+        time_going_normalized = self.normalize_input(time_going,self.max_time)
+        #print("Time going", time_going, " time going normalized ", time_going_normalized )
         ##updating the state with the new positions and times
         ## here we run a loop to update every single line of the matrix
         for x in range(8): 
             self.state[x][0] = 0
-            self.state[x][1] = self.normalize_input(time_going,self.max_costtime) 
+            self.state[x][1] = time_going_normalized
+            #self.state[x][1] = time_going 
         self.state[pos_going][0] = 1 
-        #update the new time current cost + time elpased so far
-        self.time_elapsed = self.time_elapsed + time_going
+
        
         
         ###############################################
@@ -344,16 +354,16 @@ class LoraCollector232(Env):
             ## If the position the gateways is moving to is
             ## is a cluster, then verify if there are packets to collect
             if self.vertices[pos_going] == 1:
-                if self.time_elapsed < self.max_time:
-                     gain  = gain + self.sender_active(self.time_elapsed,node,pos_going)
+                if time_going <= self.max_time:
+                     gain  = gain + self.sender_active(time_going,node,pos_going)
                 
                      
             ## If the position the gateways is edge
             ## confirm if the data upload matches the requirements
             else:
              if self.vertices[pos_going] == 0:
-               if  self.time_elapsed < self.max_time:
-                     gain = gain + self.dump_buffer(self.time_elapsed)
+               if  time_going <= self.max_time:
+                     gain = gain + self.dump_buffer(time_going)
                      self.buffer = 0 
                
         ### update the remaining bytes to be collected in each cluster
@@ -390,7 +400,7 @@ class LoraCollector232(Env):
 #        else:
 #            over = 0
 #        
-        if (self.game_over == 1):
+        if (self.game_over[0] == 1):
             over = 1
         else:
             over = 0    
@@ -411,13 +421,16 @@ class LoraCollector232(Env):
             new_state_idx = going
         
         ## this is valid if new_time is based on the elapsed time
-        #new_time_idx = time_coming + self.trip_time(coming,going) + 1    
+        new_time_idx = self.time_elapsed + self.trip_time(coming,going) + 1    
         ## in this new version, the time is simply the cost to moving between vertices
-        new_time_idx = self.trip_time(coming,going) + 1    
+        #new_time_idx = self.trip_time(coming,going) + 1    
         
-        if new_time_idx + self.time_elapsed > self.max_time:
+        if new_time_idx >= self.max_time:
+             new_time_idx = self.max_time
              self.game_over[0] = 1 #this code was changed for multiple gws to a single gateway. Now this tensor has only one element wihch is [0]       
-            
+        
+        self.time_elapsed = new_time_idx
+        
         return new_state_idx,new_time_idx
     
     

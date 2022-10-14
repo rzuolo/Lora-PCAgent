@@ -33,19 +33,19 @@ action_type = np.int16
 
 ####### training options to be used by the training manager #######
 num_episodes = 2000
-episode_length = 30
+episode_length = 300
 log_file = 'scenario_name_log_file.txt'
 
 # neural nets
-device = 'gpu'
+device = 'cpu'
 lr = 0.001
 
 actor_critic = ACDNN(
             in_features=5,
             #hidden_size=2048,
-            hidden_size=1024,
+            #hidden_size=1024,
             #hidden_size=256,
-            #hidden_size=512,
+            hidden_size=512,
             lr=lr,
             device=device)
 

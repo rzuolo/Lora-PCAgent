@@ -86,7 +86,7 @@ class TrainingManager:
                 episode_reward = 0
                 actions_list = []
                 extra_signals_list =[]
-                while not epsiode_done and step <= self.episode_length:
+                while not epsiode_done and step < self.episode_length:
                     # record actions
                     actions_list.append(action)
                     # call step function in the environement
@@ -95,7 +95,7 @@ class TrainingManager:
                     
                     #print("That is one state \n", state)
                     #print("This is one action-reward \n", action, reward)
-                    
+                    #print(" this is done ", done, " episode ", step)
                     
                     episode_reward += reward
                     if done == 1:
