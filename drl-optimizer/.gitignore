@@ -1,3 +1,7 @@
+scenario_name_log_file.txt
+
+
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
