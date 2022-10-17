@@ -32,26 +32,26 @@ action_type = np.int16
 
 
 ####### training options to be used by the training manager #######
-num_episodes = 2000
-episode_length = 300
+num_episodes = 40000
+episode_length = 100
 log_file = 'scenario_name_log_file.txt'
 
 # neural nets
-device = 'cpu'
-lr = 0.001
+device = 'gpu'
+lr = 0.1
 
 actor_critic = ACDNN(
             in_features=5,
             #hidden_size=2048,
-            #hidden_size=1024,
+            hidden_size=1024,
             #hidden_size=256,
-            hidden_size=512,
+            #hidden_size=512,
             lr=lr,
             device=device)
 
 # agent
 discount_factor = 0.99
-entropy_factor = 0.001
+entropy_factor = 0.01
 #entropy_factor = 10000000000
 
 agent = PCAgent(state_size=state_size, 

@@ -388,7 +388,11 @@ class LoraCollector232(Env):
         #    gain = -20
         #else:
         #    gain = 10
-        
+       
+        #apply a penalty for every non profitable step
+        if gain == 0:
+            gain = -1
+            
         ##update the reward
         #if gain > 0:
             #print("LOG4 This is the supposed reward ",reward)
