@@ -120,6 +120,9 @@ class LoraCollector232(Env):
         self.max_costtime = 4
         self.max_buffer   = 500
         self.max_earliest = self.max_tick + 1
+        
+        
+        self.visit_time = 100
    
 
 
@@ -192,37 +195,58 @@ class LoraCollector232(Env):
     ######## Check if the node is upstreaming data
     ######## at specific time and position
     ########################################################
-    def sender_active(self,time,node,vertex):
+    def sender_active(self,time,node,vertex,wait):
         #print("LOG4 Node is ",node, " and time is ",time, " ", (self.node_freq[vertex][node])+self.period, " and pos is ", vertex)
         #print ("LOG4 This is the freq ",(self.node_freq[vertex][node]*60)/5)
-        
+        #wait=100
         # there must be a time conversion here because 1 timestep = 5 seconds
 #        if ( (self.node_freq[vertex][node] != 0)  and ((time*5) > (self.node_freq[vertex][node])+self.period)  and (   ((time*5) % (self.node_freq[vertex][node])) <= 5) ):
-        if ( (self.node_freq[vertex][node] != 0)  and ((time*5) > ((self.node_freq[vertex][node])+self.period))  and (   ((time*5) % (self.period) <= 5) )):
+        if ( (self.node_freq[vertex][node] != 0)  and ((time*5) > ((self.node_freq[vertex][node])+self.period))):
+            self.checked[node] = 1 
+            self.tick_update(time)
+            points=0
+            if  ((time*5)-self.node_freq[vertex][node]) % (self.period) == 0:
+                points=points+1    
+            #if  ((((time*5+wait)-self.node_freq[vertex][node]) % (self.period) == 0) and (wait !=0)):
+            #    points=points+1    
+            
+            a = int((time*5-(self.node_freq[vertex][node]))/(self.period))
+            b = int((((time+wait)*5)-self.node_freq[vertex][node])/(self.period))
+            points = points + int(b-a)
+            
+            
+        #and (   ((time*5) % (self.period) <= 5) )):
         #if ( time % node_freq[node-1]) <= (time-5):
-            if self.visited[node] < self.node_target[node]:
-                self.buffer = self.buffer + self.node_payload[node]
-                
-                if self.buffer > self.max_cargo: #max cargo not in use currently
-                    self.buffer = 30000
-                    self.game_over[0] = 1 #as a result of changing to a single gateway, this is now [0] 
-#                    print ("LOG4 Buffer overflow")
-                self.visited[node] = 1 + self.visited[node]
-                self.checked[node] = 1 
-                #print("LOG5 The sender interval is active ",node," Gateway ", 0 ," payload ",self.node_payload[node]," time ",time, " position ",self.state[0]," visitado ", self.visited[node], " target ", self.node_target[node])
-                #print("LOG5 Node is ",node, " and time is ",time, " ", (self.node_freq[vertex][node])+self.period, " and pos is ", vertex)
-                #print ("LOG5 This is the freq ",(self.node_freq[vertex][node]*60)/5)
-        
-#                return self.node_payload[node]
-                self.tick_update(time)
-                return 10
+            if (points > 0) and (self.visited[node]  < self.node_target[node]) :
+                if (self.visited[node] + points) <= self.node_target[node]:
+                    self.buffer = self.buffer + (self.node_payload[node] * points)
+                    self.visited[node] = points + self.visited[node]
+                    return self.node_payload[node]*points
+                else:
+                    points = self.node_target[node] - self.visited[node]
+                    self.buffer = self.buffer + (self.node_payload[node] * points)
+                    self.visited[node] = self.node_target[node]
+                    return self.node_payload[node]*points
             else:
-                return 0
-                #return -1*self.node_payload[node]
+              return 0
         else:
-            return 0
-            #return 0
-       
+              return 0
+               
+            
+                    #print("LOG5 The sender interval is active ",node," Gateway ", 0 ," payload ",self.node_payload[node]," time ",time, " position ",self.state[0]," visitado ", self.visited[node], " target ", self.node_target[node])
+                    #print("LOG5 Node is ",node, " and time is ",time, " ", (self.node_freq[vertex][node])+self.period, " and pos is ", vertex)
+                    #print ("LOG5 This is the points ", points)
+                    #print ("LOG5 This is the freq ",(self.node_freq[vertex][node]*60)/5)
+                    #print ("LOG5 This is start time ",(self.node_freq[vertex][node]))
+                    #print ("LOG5 This is the real time ", time*5)
+                    #print ("LOG5 This is the real endtime ", ((wait+time)*5))
+                    #print ("LOG5 This is the real return ", ((10)*points))
+                    # print ("LOG5 Target, Achieved", self.node_target[node], self.visited[node])
+    #                return self.node_payload[node]
+            
+            
+              
+        
 
     ########################################################
     ######## Check if the node is at an upstreaming depot
@@ -313,7 +337,7 @@ class LoraCollector232(Env):
         time_coming = self.time_elapsed  
         
         
-        pos_going,time_going = self.move(time_coming,pos_coming,turn) #moving to new position and time
+        pos_going,time_going = self.move(time_coming,pos_coming,turn,self.visit_time) #moving to new position and time
         #print("LOG7 timecoming ",timecoming[turn]," poscoming ", coming[turn])
         #print("LOG7 timegoing ",time_going," posgoing ", pos_going)
 
@@ -355,7 +379,7 @@ class LoraCollector232(Env):
             ## is a cluster, then verify if there are packets to collect
             if self.vertices[pos_going] == 1:
                 if time_going <= self.max_time:
-                     gain  = gain + self.sender_active(time_going,node,pos_going)
+                     gain  = gain + self.sender_active(time_going,node,pos_going,self.visit_time)
                 
                      
             ## If the position the gateways is edge
@@ -365,6 +389,8 @@ class LoraCollector232(Env):
                if  time_going <= self.max_time:
                      gain = gain + self.dump_buffer(time_going)
                      self.buffer = 0 
+               
+               
                
         ### update the remaining bytes to be collected in each cluster
         ### or update the amount of uploaded bytes on each depot
@@ -390,8 +416,8 @@ class LoraCollector232(Env):
         #    gain = 10
        
         #apply a penalty for every non profitable step
-        if gain == 0:
-            gain = -1
+        #if gain == 0:
+        #    gain = -1
             
         ##update the reward
         #if gain > 0:
@@ -416,16 +442,20 @@ class LoraCollector232(Env):
       
     
     ## When a step is taken the positions and time need to be updated
-    def move(self,time_coming,coming,going):
+    def move(self,time_coming,coming,going,wait):
               
         if coming == going:
 #            print("Do nothing, stays at same position")
             new_state_idx = coming
         else:
-            new_state_idx = going
+            new_state_idx = going 
         
         ## this is valid if new_time is based on the elapsed time
-        new_time_idx = self.time_elapsed + self.trip_time(coming,going) + 1    
+        
+        if self.vertices[going] == 1:
+            new_time_idx = self.time_elapsed + self.trip_time(coming,going) + 1 + wait #using a wait time of 20    
+        else:
+            new_time_idx = self.time_elapsed + self.trip_time(coming,going) + 1 #using a wait time of 20    
         ## in this new version, the time is simply the cost to moving between vertices
         #new_time_idx = self.trip_time(coming,going) + 1    
         
