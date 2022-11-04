@@ -37,7 +37,7 @@ episode_length = 100
 log_file = 'scenario_name_log_file.txt'
 
 # neural nets
-device = 'cpu'
+device = 'gpu'
 lr = 0.001
 
 actor_critic = ACDNN(
@@ -51,7 +51,7 @@ actor_critic = ACDNN(
 
 # agent
 discount_factor = 0.99
-entropy_factor = 0.0001
+entropy_factor = 0.00001
 #entropy_factor = 10000000000
 
 agent = PCAgent(state_size=state_size, 
