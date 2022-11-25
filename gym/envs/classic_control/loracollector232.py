@@ -31,8 +31,8 @@ class LoraCollector232(Env):
         ## Each action signifies a position in the graph of clusters. Regardless they being depot or cluster for collection.
         self.action_space = spaces.Discrete(8) #0 1 2 3 ... 8     
         self.action_space.n = 8
-                        
-       
+        
+        
         # Maximum flags for common timer, episode, airbourn cargo, etc
         self.max_time = 862 #game time insteps
         #self.max_time = 868
@@ -303,13 +303,21 @@ class LoraCollector232(Env):
     #apply rewards and return the resulting environment
     ######################################################
     ######################################################
-    def step(self, action):
+    def step(self, vaction):
                 
         #going = self.action_breakdown(action,self.gateways_available,self.actions_available)
+        
+        action            = vaction[0]
+        self.visit_time   = vaction[1]
+
         
         self.masks = np.ones_like(self.state[:, 0]) 
         self.masks[action] = 0
         
+        
+        
+
+            
         #going,mascara = action, self.masks 
         #time_coming = 0
         pos_coming  = 0
