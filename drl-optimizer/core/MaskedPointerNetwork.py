@@ -204,7 +204,7 @@ class MaskedPointerNetwork(nn.Module):
             decoder_cell_input = decoder_cell_input.clone()
             for j in range(self.batch_size):
                 decoder_cell_input[j, :] = input_seq[j, max_pointer[j], :]
-                
+        
         return attentions, pointers, _, encoder_output, h_n, embdds
 
 

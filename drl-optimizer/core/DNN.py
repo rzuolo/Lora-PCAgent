@@ -62,6 +62,13 @@ class Critic(nn.Module):
         self.decoder = nn.Sequential(nn.Linear(2*hidden_size, 2*hidden_size),
                                     nn.ReLU(),
                                     nn.Linear(2*hidden_size, 1))
+
+
+        
+        self.timedecoder = nn.Sequential(nn.Linear(8*hidden_size, 1))
+                                         
+                
+
         
         # attention params
         # self.W_1 = nn.Conv1d(hidden_size, hidden_size, 1, 1)
@@ -71,85 +78,59 @@ class Critic(nn.Module):
         # put into device
         self.to(self.device)
 
+
+    def sigmoid(self, z):
+        return 1 / (1 + np.exp(-z))
+
+    def tanh(self, z):
+        return np.tanh(z)
+
     def forward(self, state, encoder_output, h_n, embdds):
+        
+        
+        v2 = self.timedecoder(torch.reshape(embdds, (1,(8*self.hidden_size))))
         
         # call encoder, it will take care of state initialization
         encoder_output, (h_n, c_n), embdds = self.encoder(state) # it returns output, hidden, embed
 
+        #print( "hn size ",h_n.size())
+        #print( "encoder_output inside loop ",encoder_output, encoder_output.size())
+        #print( "embedds ",embdds.size())
+        #print( "cn ",c_n.size())
+       
+        
+        #print(" encoder_output ",encoder_output[0,:,0])
         # process block loop
         #q = h_n.squeeze(0) # hidden state
         q = torch.reshape(h_n, (1, 2*self.hidden_size)) # hidden state
+        
+        #q2 = torch.reshape(h_n, (1, 2*self.hidden_size)) # hidden state
+        
+        #v2 = self.timedecoder(q)
+        
+        #print("Sigmoid 1",float(v2))
+        #print("Sigmoid 2",float(F.sigmoid(v2)))
+        #print("Tan ", float(F.tanh(v2)))
+        
+        #print(self.sigmoid(float(v2)))
+        #print(self.tanh(float(v2)))
+        #print(" Timedecoder ", v2)
+        
+        v2 = self.tanh(float(v2))
+        
+        
         for _ in range(self.num_process_blocks):
             ref, u = self.process_block(q, encoder_output)
             q = torch.bmm(ref,F.softmax(u, dim=1).unsqueeze(-1)).squeeze(-1)
 
         # decode query
         v = self.decoder(q) # decoder_output is the value function of the critic
+ 
         
-        return v
+        return v, v2
         
 
-class Critic_(nn.Module):
-    def __init__(self,
-                in_features,
-                hidden_size,
-                batch_size=1,
-                num_process_blocks=10,
-                device='cpu'):
-
-        super(Critic, self).__init__()
-        # attributes
-        self.in_features = in_features
-        self.hidden_size = hidden_size
-        self.batch_size = batch_size
-        self.num_process_blocks = num_process_blocks
-
-        # device
-        if device is not 'cpu':
-            if torch.cuda.is_available():
-                device = 'cuda:0'
-        self.device = device
-
-        # encoder/decoder
-        self.encoder = EmbeddingLSTM(embedding_layer=nn.Conv1d(in_features, hidden_size, 1, 1),
-                                embedding_type='Conv1d',   
-                                batch_size=self.batch_size,
-                                hidden_size=self.hidden_size,
-                                device=self.device
-                                )
-
-        #Define Decoder
-        self.Processor=torch.nn.LSTM(input_size=hidden_size,hidden_size=hidden_size,batch_first=True,
-                              bidirectional=False)
-        #Define Attention
-        self.W_ref=torch.nn.Linear(hidden_size, hidden_size, bias=False)
-        self.W_q=torch.nn.Linear(hidden_size, hidden_size, bias=False)
-        self.v=torch.nn.Linear(hidden_size, 1, bias=True)
-        
-        self.last_layer=torch.nn.Sequential(
-            torch.nn.Linear(hidden_size, hidden_size, bias=True),
-            torch.nn.ReLU(),
-            torch.nn.Linear(hidden_size, 1, bias=True))
-        # put into device
-        self.to(self.device)
-
-    def forward(self, state, encoder_output, h_n, embdds):
-        
-        # call encoder, it will take care of state initialization
-        Enc, (hn, cn), embdds = self.encoder(state) # it returns output, hidden, embed
-
-        processor_input = torch.zeros(Enc.size()[0],1,Enc.size()[2]).to(self.device)
-        #processor_input:(batch, city, num_directions * hidden_size)
-        processor_state = (hn,cn)
-        for i in range(self.num_process_blocks):
-            processor_output,processor_state=self.Processor(processor_input,processor_state)
-            u = torch.squeeze(self.v(torch.tanh(self.W_ref(Enc)+self.W_q(processor_output.repeat(1,Enc.size(1),1)))), dim=-1)
-            attention_weight=torch.nn.functional.softmax(u, dim=1)
-            processor_input=torch.unsqueeze(torch.einsum('ij,ijk->ik',attention_weight,Enc),dim=1)
-        output=torch.squeeze(self.last_layer(processor_output))
-
-        return output
-        
+       
 
 class PointerCriticArch(nn.Module):
     """ 
@@ -196,15 +177,28 @@ class PointerCriticArch(nn.Module):
         self.to(self.device)
     
     def forward(self, state, masks):
+        
         state = torch.tensor(state).to(self.device)
         state = state.float().unsqueeze(0) #.unsqueeze(-1)
-        #print("State ",state.shape)
-        #print("Masks ",masks)
+        
         probs, act, _, encoder_output, h_n, embdds = self.pointer(state, masks)
+        
+        #print("Encoder ",encoder_output, encoder_output.size())
+        #print("Embdds ",embdds, embdds.size())
+        #something = torch.reshape(encoder_output, (1, 16*self.hidden_size))
+        #print("Encoder ",something, something.size())
+        
+        #print("Masks ",masks)
+        
+              
         probs = probs.squeeze(0).squeeze(-1)
-        v = self.critic(state, encoder_output, h_n, embdds).squeeze(-1)
-
-        return v, probs, act
+        #v, time = self.critic(state, encoder_output, h_n, embdds).squeeze(-1)
+        
+        v, time = self.critic(state, encoder_output, h_n, embdds)
+        
+        #time = 100
+        #v = 0
+        return v, probs, act, time
     
 
 
@@ -226,14 +220,14 @@ class ACDNN:
                                     device=device,
                                     lr=lr)
 
-        self.rep = 0 
-
+   
+        
     def predict(self, source, masks):
-        v, probs, _ = self.model(source, masks)
+        v, probs, _, _ = self.model(source, masks)
         return v.detach().cpu().item(), probs.detach().cpu().numpy()
     
     def stochastic_predict(self, source, masks):
-        v, probs, action = self.model(source, masks)
+        v, probs, action, time = self.model(source, masks)
         dist = torch.distributions.Categorical(probs)
 
         #action = dist.sample(). this is used during the training
@@ -244,27 +238,20 @@ class ACDNN:
     def collect(self, source, masks):
         
         #print("source-masks ", source, masks )
-        v, probs, action = self.model(source, masks)
+        v, probs, action, time = self.model(source, masks)
+              
         dist = torch.distributions.Categorical(probs)
         action = dist.sample()
         log_probs = dist.log_prob(action)
         
-
         #print("SAMPLE1 ",dist.sample() )
         #print("SAMPLE2 ",dist.entropy().mean() )
         #print("SAMPLE2 ",dist.sample() )
         #print("SAMPLE2 ",dist.entropy().mean() )
-        
-        var1 = dist.sample()
-        var2 = dist.sample()
-
-        if var1 != var2:
-            self.rep = self.rep + 1
-        
-
+                
         entropy = dist.entropy().mean()
         #entropy = torch.zeros(1)
-        return v, action.cpu().detach().item(), log_probs, entropy
+        return v, time, action.cpu().detach().item(), log_probs, entropy
     
     
     def calc_loss(self,

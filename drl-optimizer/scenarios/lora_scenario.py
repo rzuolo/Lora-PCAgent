@@ -26,26 +26,25 @@ env = gym.make('LoraCollector-v232')
                                     
 state_size = env.observation_space.shape
 action_space = [i for i in range(env.action_space.n)]
-
 state_type = np.int16
 action_type = np.int16
 
 
 ####### training options to be used by the training manager #######
-num_episodes = 40000
+num_episodes = 1000
 episode_length = 100
 log_file = 'scenario_name_log_file.txt'
 
 # neural nets
-device = 'gpu'
+device = 'cpu'
 lr = 0.001
 
 actor_critic = ACDNN(
             in_features=5,
             #hidden_size=2048,
             #hidden_size=1024,
-            #hidden_size=256,
-            hidden_size=512,
+            hidden_size=256,
+            #hidden_size=512,
             lr=lr,
             device=device)
 
@@ -55,7 +54,7 @@ entropy_factor = 0.00001
 #entropy_factor = 10000000000
 
 agent = PCAgent(state_size=state_size, 
-                 action_space=action_space,
+                 action_space= action_space,
                  actor_critic=actor_critic,
                  discount_factor=discount_factor,
                  entropy_factor=entropy_factor,

@@ -27,8 +27,9 @@ class PCAgent(AbstractAgent):
                  name='PCAgent'):
 
         super(PCAgent, self).__init__(state_size=state_size,
-                                    action_space=action_space, name=name)
-
+                                   action_space=action_space, name=name)
+        
+      
         self.actor_critic = actor_critic
         self.discount_factor = discount_factor
         self.entropy_factor = entropy_factor
@@ -50,14 +51,19 @@ class PCAgent(AbstractAgent):
 
         # do a forward pass on the ac network and collect output
         
-        v, action, log_probs, entropy = self.actor_critic.collect(state, masks)
+                
+        v, v2, action, log_probs, entropy = self.actor_critic.collect(state, masks)
+             
+        #print("actions ",action, v, v2 )
         # store them, 
         # the reward will be added in the learn function.
         # the reason is that the reward is not avialable now
         self.values.append(v)
         self.log_probs.append(log_probs)
         self.entropy.append(entropy)
-        return action
+        
+        
+        return action, v2
     
     def learn(self, *args):
         """ The actual algorithm of DQN goes here

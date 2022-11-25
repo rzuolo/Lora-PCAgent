@@ -77,7 +77,17 @@ class TrainingManager:
                 # 1 and 2- reset the environement and get initial state
                 state, masks = self.env.reset()
                 # 3 get first action
-                action = self.agent.get_policy_action(state, masks)
+                action, time = self.agent.get_policy_action(state, masks)
+                
+                ########################################################
+                ### Adpatation to define a timestep of 20 or 100 units
+                if time <= 0:
+                    time = 20 
+                else:
+                    time = 100
+                vaction = [action,time]
+                ########################################################
+                ########################################################
                 
                 # 4 - iterate over the episode step unitl the agent moves to a terminal state or 
                 # the episode ends 
@@ -90,7 +100,7 @@ class TrainingManager:
                     # record actions
                     actions_list.append(action)
                     # call step function in the environement
-                    state_, reward, done, extra_signals = self.env.step(action)
+                    state_, reward, done, extra_signals = self.env.step(vaction)
                     
                     
                     #print("That is one state \n", state)
@@ -105,14 +115,24 @@ class TrainingManager:
                     self.agent.learn(total_steps, step, state, state_, reward, action, done, extra_signals)
                     # next state-action pair
                     state = state_
-                    action = self.agent.get_policy_action(state, extra_signals)
+                    action, time = self.agent.get_policy_action(state, extra_signals)
+                    ########################################################
+                    ### Adpatation to define a timestep of 20 or 100 units
+                    if time <= 0:
+                        time = 20 
+                    else:
+                        time = 100
+                    vaction = [action,time]
+                    ########################################################
+                    ########################################################
+                
                     
-
+                    #print ("Action-Time ",action, time)
                     
                     step += 1
                     total_steps += 1
                 if verbose:
-                    print('Episode:{}\treward:{}\tsteps:{}\trepetitions:{}'.format(i, episode_reward, step, self.agent.actor_critic.rep))
+                    print('Episode:{}\treward:{}\tsteps:{}'.format(i, episode_reward, step))
                     self.agent.actor_critic.rep = 0
                 all_rewards.append(episode_reward)
                 last_rewards.append(episode_reward)
@@ -154,8 +174,8 @@ class TrainingManager:
                 # 1 and 2- reset the environement and get initial state
                 state, masks = self.env.reset()
                 # 3 get first action
-                action = self.agent.get_policy_action(state, masks)
-                
+                action, time = self.agent.get_policy_action(state, masks)
+                vaction = [action, time]
                 # 4 - iterate over the episode step unitl the agent moves to a terminal state or 
                 # the episode ends 
                 step = 1
@@ -167,7 +187,7 @@ class TrainingManager:
                     # record actions
                     actions_list.append(action)
                     # call step function in the environement
-                    state_, reward, done, extra_signals = self.env.step(action)
+                    state_, reward, done, extra_signals = self.env.step(vaction)
                     masks, jfi, thu = extra_signals
                     extra_signals = (jfi, thu)
                     episode_reward += reward
