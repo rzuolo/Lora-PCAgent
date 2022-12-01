@@ -127,7 +127,7 @@ class Critic(nn.Module):
         v = self.decoder(q) # decoder_output is the value function of the critic
  
         
-        return v, v2
+        return v
         
 
        
@@ -164,7 +164,15 @@ class PointerCriticArch(nn.Module):
                             batch_size=self.batch_size,
                             device=device
                              )
-
+        
+        # time
+        self.time = Time(in_features=self.in_features,
+                            hidden_size=self.hidden_size,
+                            batch_size=self.batch_size,
+                            device=device
+                             )
+               
+        
         # device
         if device is not 'cpu':
             if torch.cuda.is_available():
@@ -194,7 +202,8 @@ class PointerCriticArch(nn.Module):
         probs = probs.squeeze(0).squeeze(-1)
         #v, time = self.critic(state, encoder_output, h_n, embdds).squeeze(-1)
         
-        v, time = self.critic(state, encoder_output, h_n, embdds)
+        v    = self.critic(state, encoder_output, h_n, embdds)
+        time = self.time(state, encoder_output, h_n, embdds)
         
         #time = 100
         #v = 0
@@ -219,15 +228,14 @@ class ACDNN:
                                     output_length=output_length,
                                     device=device,
                                     lr=lr)
-
    
         
     def predict(self, source, masks):
-        v, probs, _, _ = self.model(source, masks)
-        return v.detach().cpu().item(), probs.detach().cpu().numpy()
+        v, probs, _, time = self.model(source, masks)
+        return v.detach().cpu().item(), time.detach().cpu().item(), probs.detach().cpu().numpy()
     
     def stochastic_predict(self, source, masks):
-        v, probs, action, time = self.model(source, masks)
+        v, probs, action, _ = self.model(source, masks)
         dist = torch.distributions.Categorical(probs)
 
         #action = dist.sample(). this is used during the training
@@ -257,6 +265,7 @@ class ACDNN:
     def calc_loss(self,
                     discounted_r,
                     values,
+                    times,
                     log_probs,
                     entropy,
                     entropy_factor=0.01):
@@ -273,6 +282,7 @@ class ACDNN:
 
         discounted_r = torch.from_numpy(discounted_r).to(self.model.device)
         values = torch.stack(values).to(self.model.device)
+        times = torch.stack(times).to(self.model.device)
         log_probs = torch.stack(log_probs).to(self.model.device)
         entropy = torch.stack(entropy).sum().to(self.model.device)
         # normalize discounted_r
@@ -284,7 +294,10 @@ class ACDNN:
         # actor loss
         actor_loss = -(log_probs * adv.detach()).mean()
 
-        loss = actor_loss - entropy_factor * entropy + critic_loss
+        # time loss
+        time_loss = times.mean()
+
+        loss = actor_loss - entropy_factor * entropy + critic_loss + time_loss
         
         # reset grads
         self.model.optimizer.zero_grad()
@@ -302,3 +315,110 @@ class ACDNN:
     def load_model(self, path):
         self.model.load_state_dict(torch.load(path))
     
+
+
+class Time(nn.Module):
+    def __init__(self,
+                in_features,
+                hidden_size,
+                batch_size=1,
+                num_process_blocks=10,
+                device='cpu'):
+
+        super(Time, self).__init__()
+        # attributes
+        self.in_features = in_features
+        self.hidden_size = hidden_size
+        self.batch_size = batch_size
+        self.num_process_blocks = num_process_blocks
+
+        # device
+        if device is not 'cpu':
+            if torch.cuda.is_available():
+                device = 'cuda:0'
+        self.device = device
+
+
+        # encoder/decoder
+        # embedding_layer=nn.Conv1d(in_features, hidden_size, 1, 1),
+        # embedding_layer=nn.Linear(in_features=in_features, out_features=hidden_size),
+        self.encoder = EmbeddingLSTM(embedding_layer=nn.Linear(in_features=in_features, out_features=hidden_size),
+                                embedding_type='Linear',   
+                                batch_size=self.batch_size,
+                                hidden_size=self.hidden_size,
+                                device=self.device
+                                )
+
+        # encoder is two hidden linear layers as in https://arxiv.org/pdf/1611.09940.pdf
+        self.decoder = nn.Sequential(nn.Linear(2*hidden_size, 2*hidden_size),
+                                    nn.ReLU(),
+                                    nn.Linear(2*hidden_size, 1))
+
+
+        
+        #self.timedecoder = nn.Sequential(nn.Linear(8*hidden_size, 1))
+        
+        
+              
+        # attention params
+        # self.W_1 = nn.Conv1d(hidden_size, hidden_size, 1, 1)
+        # self.W_2 = nn.Linear(in_features=hidden_size, out_features=hidden_size)
+        # self.v = nn.Linear(in_features=hidden_size, out_features=1)
+        self.process_block =Attention(hidden_size, use_tanh=False)
+        # put into device
+        self.to(self.device)
+        
+        
+
+
+    #def sigmoid(self, z):
+    #    return 1 / (1 + np.exp(-z))
+
+    def tanh(self, z):
+        return np.tanh(z)
+
+    def forward(self, state, encoder_output, h_n, embdds):
+        
+        
+        #v2 = self.timedecoder(torch.reshape(embdds, (1,(8*self.hidden_size))))
+        
+        # call encoder, it will take care of state initialization
+        encoder_output, (h_n, c_n), embdds = self.encoder(state) # it returns output, hidden, embed
+
+        #print( "hn size ",h_n.size())
+        #print( "encoder_output inside loop ",encoder_output, encoder_output.size())
+        #print( "embedds ",embdds.size())
+        #print( "cn ",c_n.size())
+       
+        
+        #print(" encoder_output ",encoder_output[0,:,0])
+        # process block loop
+        #q = h_n.squeeze(0) # hidden state
+        q = torch.reshape(h_n, (1, 2*self.hidden_size)) # hidden state
+        
+        #q2 = torch.reshape(h_n, (1, 2*self.hidden_size)) # hidden state
+        
+        #v2 = self.timedecoder(q)
+        
+        #print("Sigmoid 1",float(v2))
+        #print("Sigmoid 2",float(F.sigmoid(v2)))
+        #print("Tan ", float(F.tanh(v2)))
+        
+        #print(self.sigmoid(float(v2)))
+        #print(self.tanh(float(v2)))
+        #print(" Timedecoder ", v2)
+        
+        #v2 = self.tanh(float(v2))
+        
+        
+        for _ in range(self.num_process_blocks):
+            ref, u = self.process_block(q, encoder_output)
+            q = torch.bmm(ref,F.softmax(u, dim=1).unsqueeze(-1)).squeeze(-1)
+
+        # decode query
+        v = self.decoder(q) # decoder_output is the value function of the critic
+        v = torch.sigmoid(v)
+        
+        return v
+
+

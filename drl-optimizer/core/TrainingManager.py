@@ -81,10 +81,13 @@ class TrainingManager:
                 
                 ########################################################
                 ### Adpatation to define a timestep of 20 or 100 units
-                if time <= 0:
-                    time = 20 
-                else:
-                    time = 100
+                #if time <= 0:
+                #    time = 20 
+                #else:
+                #    time = 100
+                time = int(time*100)
+                if time < 20:
+                    time = 20
                 vaction = [action,time]
                 ########################################################
                 ########################################################
@@ -95,10 +98,12 @@ class TrainingManager:
                 epsiode_done = False
                 episode_reward = 0
                 actions_list = []
+                time_list = []
                 extra_signals_list =[]
                 while not epsiode_done and step < self.episode_length:
                     # record actions
                     actions_list.append(action)
+                    time_list.append(time)
                     # call step function in the environement
                     state_, reward, done, extra_signals = self.env.step(vaction)
                     
@@ -118,10 +123,14 @@ class TrainingManager:
                     action, time = self.agent.get_policy_action(state, extra_signals)
                     ########################################################
                     ### Adpatation to define a timestep of 20 or 100 units
-                    if time <= 0:
-                        time = 20 
-                    else:
-                        time = 100
+                    #if time <= 0:
+                    #    time = 20 
+                    #else:
+                    #    time = 100
+                    
+                    time = int(time*100)
+                    if time < 20:
+                        time = 20
                     vaction = [action,time]
                     ########################################################
                     ########################################################
@@ -139,6 +148,7 @@ class TrainingManager:
                 average_reward = sum(last_rewards)/self.average_reward_steps
                 all_average_reward.append(average_reward)
                 log.write(str(step)+ "\t" + str(episode_reward)+ "\t" + str(average_reward) + "\tActions list:" + str(actions_list) + "\n")
+                log.write(str(step)+ "\t" + str(episode_reward)+ "\t" + str(average_reward) + "\tTime list:" + str(time_list) + "\n")
                 log.flush()
         
         return all_rewards, all_average_reward
@@ -182,10 +192,12 @@ class TrainingManager:
                 epsiode_done = False
                 episode_reward = 0
                 actions_list = []
+                time_list = []
                 extra_signals_list =[]
                 while not epsiode_done and step < self.episode_length:
                     # record actions
                     actions_list.append(action)
+                    time_list.append(time)
                     # call step function in the environement
                     state_, reward, done, extra_signals = self.env.step(vaction)
                     masks, jfi, thu = extra_signals
@@ -207,6 +219,7 @@ class TrainingManager:
                 all_average_reward.append(average_reward)
                 all_extra_signals.append([sum(x)/step for x in zip(*extra_signals_list)])
                 log.write(str(step)+ "\t" + str(episode_reward)+ "\t" + str(average_reward) + "\tActions list:" + str(actions_list) + "\n")
+                log.write(str(step)+ "\t" + str(episode_reward)+ "\t" + str(average_reward) + "\tTime list:" + str(time_list) + "\n")
                 log.write(str(extra_signals_list) + '\n')
                 #log.write(str(step)+ "\t" + str(episode_reward)+ "\t" + str(average_reward) + "\n")
                 log.flush()

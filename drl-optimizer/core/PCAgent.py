@@ -40,6 +40,7 @@ class PCAgent(AbstractAgent):
         self.rewards = []
         self.log_probs = []
         self.entropy = []
+        self.times = []
 
     def get_action(self, state, masks):
         _, _, action = self.actor_critic.stochastic_predict(state, masks)
@@ -52,18 +53,19 @@ class PCAgent(AbstractAgent):
         # do a forward pass on the ac network and collect output
         
                 
-        v, v2, action, log_probs, entropy = self.actor_critic.collect(state, masks)
+        v, time, action, log_probs, entropy = self.actor_critic.collect(state, masks)
              
         #print("actions ",action, v, v2 )
         # store them, 
         # the reward will be added in the learn function.
         # the reason is that the reward is not avialable now
         self.values.append(v)
+        self.times.append(time)
         self.log_probs.append(log_probs)
         self.entropy.append(entropy)
         
         
-        return action, v2
+        return action, time
     
     def learn(self, *args):
         """ The actual algorithm of DQN goes here
@@ -102,6 +104,7 @@ class PCAgent(AbstractAgent):
             # update weights by calculating the loss and performing backward
             self.actor_critic.calc_loss(discounted_r=discounted_rewards,
                                         values=self.values,
+                                        times=self.times,
                                         log_probs=self.log_probs,
                                         entropy=self.entropy,
                                         entropy_factor=self.entropy_factor)
@@ -110,6 +113,7 @@ class PCAgent(AbstractAgent):
             self.rewards.clear()
             self.log_probs.clear()
             self.entropy.clear()
+            self.times.clear()
         else:
             self.rewards.append(reward)
 
