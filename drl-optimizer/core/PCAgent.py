@@ -55,7 +55,7 @@ class PCAgent(AbstractAgent):
                 
         v, time, action, log_probs, entropy = self.actor_critic.collect(state, masks)
              
-        #print("actions ",action, v, v2 )
+        #print("actions ",action, v, time )
         # store them, 
         # the reward will be added in the learn function.
         # the reason is that the reward is not avialable now

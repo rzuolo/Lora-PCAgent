@@ -16,7 +16,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
-
+import math
 # numpy
 import numpy as np
 
@@ -232,7 +232,8 @@ class ACDNN:
         
     def predict(self, source, masks):
         v, probs, _, time = self.model(source, masks)
-        return v.detach().cpu().item(), time.detach().cpu().item(), probs.detach().cpu().numpy()
+        return v.detach().cpu().item(), probs.detach().cpu().numpy()
+        #return v.detach().cpu().item(), time.detach().cpu().item(), probs.detach().cpu().numpy()
     
     def stochastic_predict(self, source, masks):
         v, probs, action, _ = self.model(source, masks)
@@ -252,11 +253,6 @@ class ACDNN:
         action = dist.sample()
         log_probs = dist.log_prob(action)
         
-        #print("SAMPLE1 ",dist.sample() )
-        #print("SAMPLE2 ",dist.entropy().mean() )
-        #print("SAMPLE2 ",dist.sample() )
-        #print("SAMPLE2 ",dist.entropy().mean() )
-                
         entropy = dist.entropy().mean()
         #entropy = torch.zeros(1)
         return v, time, action.cpu().detach().item(), log_probs, entropy
@@ -288,6 +284,8 @@ class ACDNN:
         # normalize discounted_r
         # critic loss
         adv = discounted_r.detach() - values
+        #adv2 = discounted_r.detach() 
+        
         critic_loss = 0.5 * adv.pow(2).mean()
         #critic_loss = F.smooth_l1_loss(values.double(), discounted_r.detach())
 
@@ -295,9 +293,21 @@ class ACDNN:
         actor_loss = -(log_probs * adv.detach()).mean()
 
         # time loss
-        time_loss = times.mean()
+        time_loss = (times.max()-times.mean())*adv.detach().mean()
+        #time_loss =  times.mean()*adv.mean() 
+        #time_loss = time_loss.detach()
+        #time_loss = -(times * adv.detach()).mean()
+        #print(" Advantage ",adv)
+        #print(" reward ", discounted_r.detach().mean())
+        #print(" adv ", adv.detach().mean())
+        print(" timeloss ", time_loss)
 
+        #loss = actor_loss - entropy_factor * entropy + critic_loss + time_loss
+        #loss = actor_loss - entropy_factor * entropy + critic_loss + time_loss*0.00000001 
         loss = actor_loss - entropy_factor * entropy + critic_loss + time_loss
+        #loss = time_loss 
+        #print(" detached ",discounted_r.detach())
+        #print(" values ",values)
         
         # reset grads
         self.model.optimizer.zero_grad()
@@ -307,6 +317,7 @@ class ACDNN:
         del entropy
         del log_probs
         del values
+        del times
         del discounted_r
 
     def save_model(self, path):
@@ -352,7 +363,7 @@ class Time(nn.Module):
         # encoder is two hidden linear layers as in https://arxiv.org/pdf/1611.09940.pdf
         self.decoder = nn.Sequential(nn.Linear(2*hidden_size, 2*hidden_size),
                                     nn.ReLU(),
-                                    nn.Linear(2*hidden_size, 1))
+                                    nn.Linear(2*hidden_size, 4))
 
 
         
@@ -360,6 +371,7 @@ class Time(nn.Module):
         
         
               
+
         # attention params
         # self.W_1 = nn.Conv1d(hidden_size, hidden_size, 1, 1)
         # self.W_2 = nn.Linear(in_features=hidden_size, out_features=hidden_size)
@@ -374,8 +386,11 @@ class Time(nn.Module):
     #def sigmoid(self, z):
     #    return 1 / (1 + np.exp(-z))
 
-    def tanh(self, z):
-        return np.tanh(z)
+    #def tanh(self, z):
+    #    return np.tanh(z)
+    
+    #def tanh(self, z):
+    #    return np.tanh(z)
 
     def forward(self, state, encoder_output, h_n, embdds):
         
@@ -417,8 +432,13 @@ class Time(nn.Module):
 
         # decode query
         v = self.decoder(q) # decoder_output is the value function of the critic
-        v = torch.sigmoid(v)
-        
+        print(" V em quatro ",v.detach())
+        #print(" V em index ", torch.argmax(v))
+        #v = int(torch.argmax(v))
+        #v = torch.sigmoid(v)
+        #v = math.log(v)
+        #v = torch.tanh(v.detach().cpu())
+        #print(" v ",torch.tanh(torch.max(v)))
         return v
 
 

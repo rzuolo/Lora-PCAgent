@@ -315,7 +315,7 @@ class LoraCollector232(Env):
         self.masks[action] = 0
         
         
-        print(" action time",action,self.visit_time)        
+        #print(" action time",action,self.visit_time)        
 
             
         #going,mascara = action, self.masks 

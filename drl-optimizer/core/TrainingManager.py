@@ -18,7 +18,7 @@ from collections import deque # to mantian the last k rewards
 
 import matplotlib.pyplot as plt
 from tqdm import trange
-
+import torch
 
 class TrainingManager:
     def __init__(self,
@@ -47,7 +47,14 @@ class TrainingManager:
         self.average_reward_steps = average_reward_steps
         self.log_file = log_file
 
-
+    """ Receives the tensor output from the critci and convertes it into 
+        different timesteps durations: 25, 50, 75 or 100
+    """
+    def timestep_converter(self,timetensor):
+        
+        timestep_index = int(torch.argmax(timetensor))
+        timestep_length = 25 + (timestep_index*25)
+        return timestep_length
 
     def run(self, verbose=False, plot=False, save_to_file=True, parallel=False):
         """ Run the RL scenario using the settings of the TrainingManager
@@ -77,7 +84,7 @@ class TrainingManager:
                 # 1 and 2- reset the environement and get initial state
                 state, masks = self.env.reset()
                 # 3 get first action
-                action, time = self.agent.get_policy_action(state, masks)
+                action, timetensor = self.agent.get_policy_action(state, masks)
                 
                 ########################################################
                 ### Adpatation to define a timestep of 20 or 100 units
@@ -85,9 +92,9 @@ class TrainingManager:
                 #    time = 20 
                 #else:
                 #    time = 100
-                time = int(time*100)
-                if time < 20:
-                    time = 20
+                time = self.timestep_converter(timetensor)
+                #if time < 20:
+                #    time = 20
                 vaction = [action,time]
                 ########################################################
                 ########################################################
@@ -120,7 +127,7 @@ class TrainingManager:
                     self.agent.learn(total_steps, step, state, state_, reward, action, done, extra_signals)
                     # next state-action pair
                     state = state_
-                    action, time = self.agent.get_policy_action(state, extra_signals)
+                    action, timetensor = self.agent.get_policy_action(state, extra_signals)
                     ########################################################
                     ### Adpatation to define a timestep of 20 or 100 units
                     #if time <= 0:
@@ -128,9 +135,9 @@ class TrainingManager:
                     #else:
                     #    time = 100
                     
-                    time = int(time*100)
-                    if time < 20:
-                        time = 20
+                    time = self.timestep_converter(timetensor)
+                    #if time < 20:
+                    #    time = 20
                     vaction = [action,time]
                     ########################################################
                     ########################################################
@@ -225,3 +232,4 @@ class TrainingManager:
                 log.flush()
 
         return all_rewards, all_average_reward, all_extra_signals
+
