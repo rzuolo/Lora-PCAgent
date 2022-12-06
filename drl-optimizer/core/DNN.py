@@ -293,7 +293,8 @@ class ACDNN:
         actor_loss = -(log_probs * adv.detach()).mean()
 
         # time loss
-        time_loss = (times.max()-times.mean())*adv.detach().mean()
+        time_loss = ((times.max()-times.mean())*adv.detach().mean())
+        #time_loss = (times.mean()*adv.detach().mean())
         #time_loss =  times.mean()*adv.mean() 
         #time_loss = time_loss.detach()
         #time_loss = -(times * adv.detach()).mean()
@@ -301,10 +302,11 @@ class ACDNN:
         #print(" reward ", discounted_r.detach().mean())
         #print(" adv ", adv.detach().mean())
         print(" timeloss ", time_loss)
+        print(" critic_loss ", critic_loss)
 
         #loss = actor_loss - entropy_factor * entropy + critic_loss + time_loss
         #loss = actor_loss - entropy_factor * entropy + critic_loss + time_loss*0.00000001 
-        loss = actor_loss - entropy_factor * entropy + critic_loss + time_loss
+        loss = actor_loss - entropy_factor * entropy + critic_loss + time_loss*1000000
         #loss = time_loss 
         #print(" detached ",discounted_r.detach())
         #print(" values ",values)
