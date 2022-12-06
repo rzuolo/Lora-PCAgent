@@ -293,6 +293,7 @@ class ACDNN:
         actor_loss = -(log_probs * adv.detach()).mean()
 
         # time loss
+        #time_loss = ((times.max()-times.mean())*discounted_r.detach().mean())
         time_loss = ((times.max()-times.mean())*adv.detach().mean())
         #time_loss = (times.mean()*adv.detach().mean())
         #time_loss =  times.mean()*adv.mean() 
@@ -301,12 +302,12 @@ class ACDNN:
         #print(" Advantage ",adv)
         #print(" reward ", discounted_r.detach().mean())
         #print(" adv ", adv.detach().mean())
-        print(" timeloss ", time_loss)
-        print(" critic_loss ", critic_loss)
+        #print(" timeloss ", time_loss)
+        #print(" critic_loss ", critic_loss)
 
-        #loss = actor_loss - entropy_factor * entropy + critic_loss + time_loss
+        loss = actor_loss - entropy_factor * entropy + critic_loss + time_loss
         #loss = actor_loss - entropy_factor * entropy + critic_loss + time_loss*0.00000001 
-        loss = actor_loss - entropy_factor * entropy + critic_loss + time_loss*1000000
+        #loss = actor_loss - entropy_factor * entropy + critic_loss + time_loss*1000000
         #loss = time_loss 
         #print(" detached ",discounted_r.detach())
         #print(" values ",values)
@@ -434,7 +435,7 @@ class Time(nn.Module):
 
         # decode query
         v = self.decoder(q) # decoder_output is the value function of the critic
-        print(" V em quatro ",v.detach())
+        #print(" V em quatro ",v.detach())
         #print(" V em index ", torch.argmax(v))
         #v = int(torch.argmax(v))
         #v = torch.sigmoid(v)
