@@ -292,9 +292,28 @@ class ACDNN:
         # actor loss
         actor_loss = -(log_probs * adv.detach()).mean()
 
+        #time_super_loss = entropy.mean()*times.mean() 
+        #print("super_time_loss ",time_super_loss)
+        #print(" Time super loss ", time_super_loss.mean())
         # time loss
         #time_loss = ((times.max()-times.mean())*discounted_r.detach().mean())
-        time_loss = ((times.max()-times.mean())*adv.detach().mean())
+        #print("####################################################################")
+        a = times-times.mean() 
+        a = a.pow(2).mean()
+        time_loss = a*adv.detach().mean()
+        #time_loss = a*discounted_r.detach().mean()
+
+        #print(time_loss)
+        #print(a)
+        #print(discounted_r.detach().size())
+        #print(adv.size())
+        #print("####################################################################")
+        #time_loss = (times.mean()*0.0001*discounted_r.detach().mean())
+         
+        #time_loss = ((times.max()-times.mean())*adv.detach().mean())
+        #print("time_loss ",times.mean()*discounted_r.mean())
+
+        #time_loss = time_super_loss.mean()*discounted_r.mean()
         #time_loss = (times.mean()*adv.detach().mean())
         #time_loss =  times.mean()*adv.mean() 
         #time_loss = time_loss.detach()
@@ -437,6 +456,7 @@ class Time(nn.Module):
         v = self.decoder(q) # decoder_output is the value function of the critic
         #print(" V em quatro ",v.detach())
         #print(" V em index ", torch.argmax(v))
+        #print(" V em softmax ", F.softmax(v,dim=1).detach()) 
         #v = int(torch.argmax(v))
         #v = torch.sigmoid(v)
         #v = math.log(v)
