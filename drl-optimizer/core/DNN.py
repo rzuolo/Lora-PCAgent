@@ -298,9 +298,9 @@ class ACDNN:
         # time loss
         #time_loss = ((times.max()-times.mean())*discounted_r.detach().mean())
         #print("####################################################################")
-        a = times-times.mean() 
-        a = a.pow(2).mean()
-        time_loss = a*adv.detach().mean()
+        delta = times-times.mean() 
+        delta = delta.pow(2).mean()
+        time_loss = delta.mean()*adv.detach().mean()
         #time_loss = a*discounted_r.detach().mean()
 
         #print(time_loss)
