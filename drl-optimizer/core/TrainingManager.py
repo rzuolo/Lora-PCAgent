@@ -88,11 +88,12 @@ class TrainingManager:
                 
                 ########################################################
                 ### Adpatation to define a timestep of 20 or 100 units
-                #if time <= 0:
-                #    time = 20 
+                time = int(timetensor*100)
+                if time <= 20:
+                    time = 20 
                 #else:
                 #    time = 100
-                time = self.timestep_converter(timetensor)
+                #time = self.timestep_converter(timetensor)
                 #if time < 20:
                 #    time = 20
                 vaction = [action,time]
@@ -130,12 +131,15 @@ class TrainingManager:
                     action, timetensor = self.agent.get_policy_action(state, extra_signals)
                     ########################################################
                     ### Adpatation to define a timestep of 20 or 100 units
+                    time = int(timetensor*100)
+                    if time <= 20:
+                        time = 20 
                     #if time <= 0:
                     #    time = 20 
                     #else:
                     #    time = 100
                     
-                    time = self.timestep_converter(timetensor)
+                    #time = self.timestep_converter(timetensor)
                     #if time < 20:
                     #    time = 20
                     vaction = [action,time]

@@ -385,7 +385,7 @@ class Time(nn.Module):
         # encoder is two hidden linear layers as in https://arxiv.org/pdf/1611.09940.pdf
         self.decoder = nn.Sequential(nn.Linear(2*hidden_size, 2*hidden_size),
                                     nn.ReLU(),
-                                    nn.Linear(2*hidden_size, 4))
+                                    nn.Linear(2*hidden_size, 1))
 
 
         
@@ -458,7 +458,7 @@ class Time(nn.Module):
         #print(" V em index ", torch.argmax(v))
         #print(" V em softmax ", F.softmax(v,dim=1).detach()) 
         #v = int(torch.argmax(v))
-        #v = torch.sigmoid(v)
+        v = torch.sigmoid(v)
         #v = math.log(v)
         #v = torch.tanh(v.detach().cpu())
         #print(" v ",torch.tanh(torch.max(v)))
