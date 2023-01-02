@@ -424,8 +424,8 @@ class LoraCollector232(Env):
         #    gain = 10
        
         #apply a penalty for every non profitable step
-        #if gain == 0:
-        #    gain = -1
+        if gain == 0:
+            gain = -1*(self.visit_time)
             
         ##update the reward
         #if gain > 0:
