@@ -148,6 +148,18 @@ class TrainingManager:
                     step += 1
                     total_steps += 1
                 if verbose:
+                    #print(state[ :,4])
+                    
+                    #### 
+                    ####Use this if you want to see how many packets are 
+                    ####remaining to be collected at the end of the episode
+                    ####
+                    #target=self.env.node_target.tolist()
+                    #result = []
+                    #for i, j in zip(target,self.env.visited):
+                    #    result.append(int(i - j))
+                    #print(result)
+                    
                     print('Episode:{}\treward:{}\tsteps:{}'.format(i, episode_reward, step))
                     self.agent.actor_critic.rep = 0
                 all_rewards.append(episode_reward)
