@@ -130,9 +130,9 @@ class LoraCollector232(Env):
     def reset(self):
         
         self.actions_available = 8
-        self.gateways_available = 1
+        self.gateways_available = 2
 
-        self.state = np.zeros(shape=(8,5))
+        self.state = np.zeros(shape=(self.gateways_available,8,5))
         #reset masks
         self.masks = np.ones_like(self.state[:, 0])
 
@@ -140,14 +140,14 @@ class LoraCollector232(Env):
         #########################################################################
         #### Create all counters and flags according with the scale of gateways 
         #########################################################################
-        self.buffer = 0
-        self.game_over = [0]
+        self.buffer = [0]*self.gateways_available
+        self.game_over = [0]*self.gateways_available
         ## this indicates the time the data has being carried in the buffer (timesteps) for TTL calculation
         ## it starts the game with the maxtime of the the game
         self.earliest = self.max_tick+1
         self.total_reward = 0 
         self.visited = [0]*self.nodes        
-        self.time_elapsed = 0
+        self.time_elapsed = [0]*self.gateways_available
        
         
         ### Calculate the maximum expected for all clusters
@@ -157,9 +157,10 @@ class LoraCollector232(Env):
         
         ### Initialize the remaining (expected bytes)
         ### to be colleceted from every cluster
-        for cluster in range(self.actions_available):
-            self.state[cluster][4] = self.normalize_input(self.total_expected_volume(cluster),500)            
-         
+        for i in range(self.gateways_available):
+            for cluster in range(self.actions_available):
+                self.state[i][cluster][4] = self.normalize_input(self.total_expected_volume(cluster),500)            
+
         return self.state, self.masks
     
 
@@ -320,10 +321,10 @@ class LoraCollector232(Env):
             
         #going,mascara = action, self.masks 
         #time_coming = 0
-        pos_coming  = 0
-        time_coming = 0
-        time_going  = 0 
-        pos_going   = 0
+        pos_coming  = [0]*self.gateways_available
+        time_coming = [0]*self.gateways_available
+        time_going  = [0]*self.gateways_available
+        pos_going   = [0]*self.gateways_available
         
         
         gain = 0
@@ -337,38 +338,37 @@ class LoraCollector232(Env):
         
         
         ## confirm the values of the state it is moving from (time_coming,pos_coming)
-        for x in range(8): 
-            if self.state[x][0] == 1:
-                pos_coming  = x
+        for x in range(self.gateways_available): 
+          for y in range(8): 
+            if self.state[x][y][0] == 1:
+                pos_coming[x]  = y
                 #time_coming = self.state[x][1] ## remove this if time difference is based on unit step costs
-        #version based on cost time         
-        time_coming = self.time_elapsed  
-        
-        
-        pos_going,time_going = self.move(time_coming,pos_coming,turn,self.visit_time) #moving to new position and time
-        #print("LOG7 timecoming ",timecoming[turn]," poscoming ", coming[turn])
-        #print("LOG7 timegoing ",time_going," posgoing ", pos_going)
-
-        if np.count_nonzero(self.game_over) == self.gateways_available:
+          #version based on cost time         
+          time_coming[x] = self.time_elapsed[x]
+          
+          
+          pos_going[x],time_going[x] = self.move(time_coming[x],pos_coming[x],turn,self.visit_time) #moving to new position and time
+          #print("LOG7 timecoming ",timecoming[turn]," poscoming ", coming[turn])
+          #print("LOG7 timegoing ",time_going," posgoing ", pos_going)
+          
+          if np.count_nonzero(self.game_over) == self.gateways_available:
             over = 1
             #return self.state,gain,over,self.masks
-        
-        
-        #update the new time current cost + time elpased so far
-        #self.time_elapsed = self.time_elapsed + time_going
+            
+          #update the new time current cost + time elpased so far
+          #self.time_elapsed = self.time_elapsed + time_going
+          time_going_normalized[x] = self.normalize_input(time_going[x],self.max_time)
 
                   
-        time_going_normalized = self.normalize_input(time_going,self.max_time)
-        #print("Time going", time_going, " time going normalized ", time_going_normalized )
-        ##updating the state with the new positions and times
-        ## here we run a loop to update every single line of the matrix
-        for x in range(8): 
-            self.state[x][0] = 0
-            self.state[x][1] = time_going_normalized
-            #self.state[x][1] = time_going 
-        self.state[pos_going][0] = 1 
+          #print("Time going", time_going, " time going normalized ", time_going_normalized )
+          ##updating the state with the new positions and times
+          ## here we run a loop to update every single line of the matrix
+          for y in range(8): 
+                self.state[x][y][0] = 0
+                self.state[x][y][1] = time_going_normalized[x]
+                #self.state[x][1] = time_going 
+          self.state[x][pos_going][0] = 1 
 
-       
         
         ###############################################
         ###############################################
@@ -381,41 +381,41 @@ class LoraCollector232(Env):
         ###############################################
         ###############################################
         
-        for node in range(self.nodes): 
+          for node in range(self.nodes): 
          
             ## If the position the gateways is moving to is
             ## is a cluster, then verify if there are packets to collect
-            if self.vertices[pos_going] == 1:
-                if time_going <= self.max_time:
-                     gain  = gain + self.sender_active(time_going,node,pos_going,self.visit_time)
+            if self.vertices[pos_going[x]] == 1:
+                if time_going[x] <= self.max_time:
+                     gain  = gain + self.sender_active(time_going[x],node,pos_going[x],self.visit_time)
                 
                      
             ## If the position the gateways is edge
             ## confirm if the data upload matches the requirements
             else:
-             if self.vertices[pos_going] == 0:
-               if  time_going <= self.max_time:
-                     gain = gain + self.dump_buffer(time_going)
+             if self.vertices[pos_going[x]] == 0:
+               if  time_going[x] <= self.max_time:
+                     gain = gain + self.dump_buffer(time_going[x])
                      self.buffer = 0 
                
                
                
-        ### update the remaining bytes to be collected in each cluster
-        ### or update the amount of uploaded bytes on each depot
-        if self.vertices[pos_going] == 1:
+          ### update the remaining bytes to be collected in each cluster
+          ### or update the amount of uploaded bytes on each depot
+          if self.vertices[pos_going[x]] == 1:
             #print("subtraindo ganhos", self.state[pos_going][4]-self.normalize_input(gain,self.max_volume))
             #print("subtraindo ganhos", 500*self.state[pos_going][4],"Ganho de ",gain)
-            self.state[pos_going][4] = self.state[pos_going][4] - self.normalize_input(gain,self.max_volume)         
-        else:
-            self.state[pos_going][4] = self.state[pos_going][4] + self.normalize_input(gain,self.max_volume)
+            self.state[x][pos_going[x]][4] = self.state[x][pos_going[x]][4] - self.normalize_input(gain,self.max_volume)         
+          else:
+            self.state[x][pos_going[x]][4] = self.state[x][pos_going[x]][4] + self.normalize_input(gain,self.max_volume)
             
-        #update the buffer number with the amount of data corresponding that cluster (line number in the state matrix) 
-        self.state[pos_going][2] = self.state[pos_going][2] + self.normalize_input(gain,self.max_buffer)
+          #update the buffer number with the amount of data corresponding that cluster (line number in the state matrix) 
+          self.state[x][pos_going[x]][2] = self.state[x][pos_going[x]][2] + self.normalize_input(gain,self.max_buffer)
         
-        ##convert it back into the state format and store ttl to it
-        for x in range(8): 
-            self.state[x][3] = self.normalize_input(self.earliest,self.max_earliest)
-        #self.state[len(self.state)-1] = turn
+          ##convert it back into the state format and store ttl to it
+          for y in range(8): 
+            self.state[x][y][3] = self.normalize_input(self.earliest,self.max_earliest)
+          #self.state[len(self.state)-1] = turn
         
         ### dummy execution to prove convergence
         #if pos_going == 5:
@@ -423,14 +423,14 @@ class LoraCollector232(Env):
         #else:
         #    gain = 10
        
-        #apply a penalty for every non profitable step
-        if gain == 0:
+          #apply a penalty for every non profitable step
+          if gain == 0:
             gain = -1*(self.visit_time)
             
-        ##update the reward
-        #if gain > 0:
+          ##update the reward
+          #if gain > 0:
             #print("LOG4 This is the supposed reward ",reward)
-        self.total_reward = self.total_reward + gain
+          self.total_reward = self.total_reward + gain
         
         ##confirm the end of the game
 #        if np.count_nonzero(self.game_over) == self.gateways_available:
@@ -438,15 +438,17 @@ class LoraCollector232(Env):
 #        else:
 #            over = 0
 #        
-        if (self.game_over[0] == 1):
-            over = 1
-        else:
-            over = 0    
-        
+          if np.count_nonzero(self.game_over == self.gateways_available):
+             over = 1
+          else:
+             over = 0    
+
+
         #terunt the steps output
         #print ("Action taken ",pos_going, self.masks)
         return self.state,gain,over, self.masks 
     
+########################################################TO BE CONTINUED 
       
     
     ## When a step is taken the positions and time need to be updated
