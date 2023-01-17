@@ -15,6 +15,9 @@ import timeit
 #matplotlib_inline.backend_inline.set_matplotlib_formats('png','pdf')
 #set_matplotlib_formats('png', 'pdf')
 TRAIN = True
+TEST = False
+#TRAIN = False
+#TEST = True
 def main():
     # define a training manager object
     tm = TM(s.num_episodes, 
@@ -33,6 +36,12 @@ def main():
         end = timeit.default_timer()
         print('\n It took ~{} useconds'.format(str(round(end-start))))
 
+    if TEST:
+        start = timeit.default_timer()
+        # let it do the magic
+        tm.test(verbose=True)
+        end = timeit.default_timer()
+        print('\n It took ~{} useconds'.format(str(round(end-start))))
 
 if __name__ == "__main__":
     main()

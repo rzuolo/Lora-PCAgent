@@ -1,0 +1,1 @@
+[traveling time in ms from ci to cj]

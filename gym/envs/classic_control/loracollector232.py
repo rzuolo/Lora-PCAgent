@@ -40,6 +40,16 @@ class LoraCollector232(Env):
         self.max_cargo = 3000 #maximum allowed buffer (large number because is not in use currently)
         self.period =  200  #app period in seconds (this is the frequency that every node will be sending packets).
         self.time_elapsed = 0 #time elapsed (in timesteps) of the game
+        
+        var = open("number_of_nodes.txt")
+        self.number_of_nodes = int(var.readline())
+        var.close()
+        
+        var = open("cargo_load.txt")
+        self.max_load = int(var.readline())
+        var.close()
+        
+        
         #####################################################
         #####################################################
         ### Number of vertices in the graph
@@ -51,16 +61,17 @@ class LoraCollector232(Env):
         #Msg sending frequency bootup time
         #After every start which is in the startup_ext, the nodes will be sending packets for every self.period time cycle
         #these values are only to indicate when the nodes start sending their first packets (in seconds)
-        self.node_freq = np.loadtxt("startup_ext.txt").reshape(8,20)
+        self.node_freq = np.loadtxt("startup_ext.txt").reshape(8,self.number_of_nodes)
         
         #self.node_freq = [ [20,15,40,0,0,0,0,0,0],
         #                   [0,0,0,20,40,0,0,0,0],
         #                   [0,0,0,0,0,80,90,15,0],
         #                   [0,0,0,0,0,0,0,0,10]]
-   
-
+        
         # The total number of nodes can be extracted from the frequencies array
         self.nodes = len(self.node_freq[0]) 
+   
+
 
         ####################################################
         ####################################################
@@ -118,7 +129,7 @@ class LoraCollector232(Env):
         ### set maximum values to be used during input normalization
         ###
         self.max_costtime = 4
-        self.max_buffer   = 500
+        self.max_buffer   = self.max_load
         self.max_earliest = self.max_tick + 1
         
         
@@ -158,7 +169,7 @@ class LoraCollector232(Env):
         ### Initialize the remaining (expected bytes)
         ### to be colleceted from every cluster
         for cluster in range(self.actions_available):
-            self.state[cluster][4] = self.normalize_input(self.total_expected_volume(cluster),500)            
+            self.state[cluster][4] = self.normalize_input(self.total_expected_volume(cluster),self.max_load)            
          
         return self.state, self.masks
     
@@ -462,11 +473,12 @@ class LoraCollector232(Env):
         
         if self.vertices[going] == 1:
             new_time_idx = self.time_elapsed + self.trip_time(coming,going) + 1 + wait #using a wait time of 20    
+            #print(" Going ",self.time_elapsed,self.trip_time(coming,going),wait,coming,going,new_time_idx)
         else:
             new_time_idx = self.time_elapsed + self.trip_time(coming,going) + 1 #using a wait time of 20    
         ## in this new version, the time is simply the cost to moving between vertices
         #new_time_idx = self.trip_time(coming,going) + 1    
-        
+       
         if new_time_idx >= self.max_time:
              new_time_idx = self.max_time
              self.game_over[0] = 1 #this code was changed for multiple gws to a single gateway. Now this tensor has only one element wihch is [0]       

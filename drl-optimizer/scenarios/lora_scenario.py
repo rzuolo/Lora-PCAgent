@@ -41,10 +41,13 @@ lr = 0.0001
 
 actor_critic = ACDNN(
             in_features=5,
+            #hidden_size=1848,
             #hidden_size=2048,
             hidden_size=1024,
+            #hidden_size=128,
             #hidden_size=256,
             #hidden_size=512,
+            #hidden_size=64,
             lr=lr,
             device=device)
 

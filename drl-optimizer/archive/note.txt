@@ -1,0 +1,2 @@
+replace the max cargo by      (cat targets_ext.txt | awk -F" " '{sum += $1} END {print sum}') * 10
+and replace the # nodes by    (cat targets_ext.txt |wc -l)

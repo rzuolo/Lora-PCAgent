@@ -113,7 +113,7 @@ class TrainingManager:
                     time_list.append(time)
                     # call step function in the environement
                     state_, reward, done, extra_signals = self.env.step(vaction)
-                    
+                     
                     
                     #print("That is one state \n", state)
                     #print("This is one action-reward \n", action, reward)
@@ -203,7 +203,11 @@ class TrainingManager:
                 # 1 and 2- reset the environement and get initial state
                 state, masks = self.env.reset()
                 # 3 get first action
-                action, time = self.agent.get_policy_action(state, masks)
+                action, timetensor = self.agent.get_policy_action(state, masks)
+                #action, time = self.agent.get_policy_action(state, masks)
+                time = self.timestep_converter(timetensor)
+                
+                
                 vaction = [action, time]
                 # 4 - iterate over the episode step unitl the agent moves to a terminal state or 
                 # the episode ends 
@@ -219,8 +223,8 @@ class TrainingManager:
                     time_list.append(time)
                     # call step function in the environement
                     state_, reward, done, extra_signals = self.env.step(vaction)
-                    masks, jfi, thu = extra_signals
-                    extra_signals = (jfi, thu)
+                    #masks, jfi, thu = extra_signals
+                    #extra_signals = (jfi, thu)
                     episode_reward += reward
                     if done == 1:
                         epsiode_done = True

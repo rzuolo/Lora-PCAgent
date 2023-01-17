@@ -1,0 +1,1 @@
+[device, cluster, pkt(i)*ToA(i,c)/PRR(i,c)*NoCl(i,c)]
