@@ -14,10 +14,10 @@ import timeit
 
 #matplotlib_inline.backend_inline.set_matplotlib_formats('png','pdf')
 #set_matplotlib_formats('png', 'pdf')
-TRAIN = True
-TEST = False
-#TRAIN = False
-#TEST = True
+#TRAIN = True
+#TEST = False
+TRAIN = False
+TEST = True
 def main():
     # define a training manager object
     tm = TM(s.num_episodes, 

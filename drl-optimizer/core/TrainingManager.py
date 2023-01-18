@@ -65,7 +65,7 @@ class TrainingManager:
         plot -- if True, the manager will plot online learning curve
         parallel -- if True the manager will parallel - NOT SUPPORTED YET.
         """
-        
+        world_record = 0
         # do some assertions first
         assert self.agent is not None, "Agent can not be None"
         assert self.env is not None, "Environment object can not be None"
@@ -162,6 +162,12 @@ class TrainingManager:
                     
                     print('Episode:{}\treward:{}\tsteps:{}'.format(i, episode_reward, step))
                     self.agent.actor_critic.rep = 0
+                
+                    #if episode_reward > world_record and episode_reward > 2800:
+                    #    world_record = episode_reward
+                    #    print("Saving new record ")
+                    #    self.agent.actor_critic.save_model("./modelsaved.pt")
+                
                 all_rewards.append(episode_reward)
                 last_rewards.append(episode_reward)
                 average_reward = sum(last_rewards)/self.average_reward_steps
@@ -170,6 +176,7 @@ class TrainingManager:
                 log.write(str(step)+ "\t" + str(episode_reward)+ "\t" + str(average_reward) + "\tTime list:" + str(time_list) + "\n")
                 log.flush()
         
+        self.agent.actor_critic.save_model("./modelsaved.pt")
         return all_rewards, all_average_reward
 
 
@@ -186,7 +193,18 @@ class TrainingManager:
         assert self.agent is not None, "Agent can not be None"
         assert self.env is not None, "Environment object can not be None"
         assert self.average_reward_steps > 1, "Reward must be averaged on more than 1 episode"
+       
+        #print("loading the model")
+        #print("Model's state_dict:")
+        #for param_tensor in self.agent.actor_critic.model.state_dict():
+        #    print(param_tensor, "\t", self.agent.actor_critic.model.state_dict()[param_tensor].size())
+        self.agent.actor_critic.load_model("./modelsaved.pt")
+        #self.agent.actor_critic.model.load_state_dict(torch.load('./modelsaved'))
+        self.agent.actor_critic.model.eval()
         
+        #print("model loaded")
+        #for param_tensor in self.agent.actor_critic.model.state_dict():
+        #    print(param_tensor, "\t", self.agent.actor_critic.model.state_dict()[param_tensor].size())
         # validate the agent is ready for training
         #assert self.agent.validate(), "Agent validation failed"
 
@@ -231,7 +249,7 @@ class TrainingManager:
                     extra_signals_list.append(extra_signals)
                     # next state-action pair
                     state = state_
-                    action = self.agent.get_action(state, masks)
+                    action, time = self.agent.get_action(state, masks)
                     step += 1
                     total_steps += 1
                 if verbose:

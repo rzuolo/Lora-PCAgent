@@ -236,13 +236,14 @@ class ACDNN:
         #return v.detach().cpu().item(), time.detach().cpu().item(), probs.detach().cpu().numpy()
     
     def stochastic_predict(self, source, masks):
-        v, probs, action, _ = self.model(source, masks)
+        v, probs, action, time = self.model(source, masks)
         dist = torch.distributions.Categorical(probs)
 
         #action = dist.sample(). this is used during the training
         action = dist.sample()
+        time = dist.sample()
         #action = torch.argmax(probs)
-        return v.detach().cpu().item(), probs.detach().cpu().numpy(), action.detach().cpu().item()
+        return v.detach().cpu().item(), probs.detach().cpu().numpy(), action.detach().cpu().item(), time.detach().cpu().item()
 
     def collect(self, source, masks):
         
@@ -343,11 +344,13 @@ class ACDNN:
         del discounted_r
 
     def save_model(self, path):
-        torch.save(self.model.state_dict(), path)
+        #torch.save(self.model.state_dict(), path)
+        torch.save(self.model, path)
 
     def load_model(self, path):
-        self.model.load_state_dict(torch.load(path))
-    
+        #self.model.load_state_dict(torch.load(path))
+        self.model = torch.load(path)
+        self.model.eval()
 
 
 class Time(nn.Module):

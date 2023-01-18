@@ -43,8 +43,8 @@ class PCAgent(AbstractAgent):
         self.times = []
 
     def get_action(self, state, masks):
-        _, _, action = self.actor_critic.stochastic_predict(state, masks)
-        return action
+        _, _, action, time = self.actor_critic.stochastic_predict(state, masks)
+        return action, time
 
     def get_policy_action(self, state, masks):
         # get action from the distribution
