@@ -10,15 +10,43 @@ import matplotlib.pyplot as plt
 from IPython.display import set_matplotlib_formats
 import numpy as np
 import timeit
+import sys
 
 
 #matplotlib_inline.backend_inline.set_matplotlib_formats('png','pdf')
 #set_matplotlib_formats('png', 'pdf')
+
+TRAIN = False
+TEST = False
+
+## Check if the type of execution is provided (test or training)
+def check_args():
+    global TRAIN
+    global TEST
+    if len(sys.argv) == 2:
+        if sys.argv[1] == "train" :
+            TRAIN = True
+            TEST = False
+        else:
+            if sys.argv[1] == "test" :
+                TRAIN = False
+                TEST = True
+            else:
+                print("Error! You need to provide an input argument for selecting between \"run.py test\" and \"run.py training\"")
+                sys.exit()
+    else:
+        print("Error! You need to provide an input argument for selecting between \"run.py test\" and \"run.py training\"")
+        sys.exit()
+
+
 #TRAIN = True
 #TEST = False
-TRAIN = False
-TEST = True
+#TRAIN = False
+#TEST = True
 def main():
+    
+    check_args()
+    
     # define a training manager object
     tm = TM(s.num_episodes, 
             s.episode_length, 

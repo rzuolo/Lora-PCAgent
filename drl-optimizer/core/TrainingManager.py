@@ -74,6 +74,9 @@ class TrainingManager:
         # validate the agent is ready for training
         #assert self.agent.validate(), "Agent validation failed"
 
+        #load the model 
+        #self.agent.actor_critic.load_model("./modelsaved.pt")
+
         # do the magic here, i.e., the main training loop
         last_rewards = deque(maxlen=self.average_reward_steps)
         all_rewards = []
