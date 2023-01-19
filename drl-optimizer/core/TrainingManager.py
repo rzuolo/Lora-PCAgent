@@ -249,7 +249,9 @@ class TrainingManager:
                     extra_signals_list.append(extra_signals)
                     # next state-action pair
                     state = state_
-                    action, time = self.agent.get_action(state, masks)
+                    action, timetensor = self.agent.get_action(state, masks)
+                    time = self.timestep_converter(timetensor)
+                    vaction = [action, time]
                     step += 1
                     total_steps += 1
                 if verbose:

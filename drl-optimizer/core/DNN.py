@@ -241,9 +241,9 @@ class ACDNN:
 
         #action = dist.sample(). this is used during the training
         action = dist.sample()
-        time = dist.sample()
+        #time = dist.sample()
         #action = torch.argmax(probs)
-        return v.detach().cpu().item(), probs.detach().cpu().numpy(), action.detach().cpu().item(), time.detach().cpu().item()
+        return v.detach().cpu().item(), probs.detach().cpu().numpy(), action.detach().cpu().item(), time
 
     def collect(self, source, masks):
         
