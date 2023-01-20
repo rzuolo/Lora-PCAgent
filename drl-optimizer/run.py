@@ -18,12 +18,15 @@ import sys
 
 TRAIN = False
 TEST = False
+upperbound = 100
 
 ## Check if the type of execution is provided (test or training)
 def check_args():
     global TRAIN
     global TEST
-    if len(sys.argv) == 2:
+    global upperbound
+
+    if len(sys.argv) == 3:
         if sys.argv[1] == "train" :
             TRAIN = True
             TEST = False
@@ -34,6 +37,8 @@ def check_args():
             else:
                 print("Error! You need to provide an input argument for selecting between \"run.py test\" and \"run.py training\"")
                 sys.exit()
+            
+            upperbound = sys.argv[2]
     else:
         print("Error! You need to provide an input argument for selecting between \"run.py test\" and \"run.py training\"")
         sys.exit()
@@ -60,14 +65,14 @@ def main():
     if TRAIN:
         start = timeit.default_timer()
         # let it do the magic
-        tm.run(verbose=True)
+        tm.run(upperbound,verbose=True)
         end = timeit.default_timer()
         print('\n It took ~{} useconds'.format(str(round(end-start))))
 
     if TEST:
         start = timeit.default_timer()
         # let it do the magic
-        tm.test(verbose=True)
+        tm.test(upperbound,verbose=True)
         end = timeit.default_timer()
         print('\n It took ~{} useconds'.format(str(round(end-start))))
 

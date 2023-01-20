@@ -56,7 +56,7 @@ class TrainingManager:
         timestep_length = 25 + (timestep_index*25)
         return timestep_length
 
-    def run(self, verbose=False, plot=False, save_to_file=True, parallel=False):
+    def run(self, worldrecord, verbose=False, plot=False, save_to_file=True, parallel=False):
         """ Run the RL scenario using the settings of the TrainingManager
         
         
@@ -184,7 +184,7 @@ class TrainingManager:
 
 
 
-    def test(self, verbose=False, plot=False, save_to_file=True, parallel=False):
+    def test(self, worldrecord, verbose=False, plot=False, save_to_file=True, parallel=False):
         """ Run the RL scenario using the settings of the TrainingManager
         Keyword arguments:
         verbose -- if True, the manager will print the total reward for each epsiode and some other statics
