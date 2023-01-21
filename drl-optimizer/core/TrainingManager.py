@@ -65,7 +65,7 @@ class TrainingManager:
         plot -- if True, the manager will plot online learning curve
         parallel -- if True the manager will parallel - NOT SUPPORTED YET.
         """
-        world_record = 0
+        #world_record = 0
         # do some assertions first
         assert self.agent is not None, "Agent can not be None"
         assert self.env is not None, "Environment object can not be None"
@@ -82,6 +82,8 @@ class TrainingManager:
         all_rewards = []
         all_average_reward = []
         total_steps = 0
+        episode_repetition = 0 
+        previous_episode_reward = 0 
         with open(self.log_file,mode='w') as log:
             for i in range(self.num_episodes): 
                 # 1 and 2- reset the environement and get initial state
@@ -107,6 +109,7 @@ class TrainingManager:
                 step = 1
                 epsiode_done = False
                 episode_reward = 0
+                episode_reward_repetition = 0
                 actions_list = []
                 time_list = []
                 extra_signals_list =[]
@@ -164,9 +167,24 @@ class TrainingManager:
                     #print(result)
                     
                     print('Episode:{}\treward:{}\tsteps:{}'.format(i, episode_reward, step))
+                    
+                    #### Some jury-rigged code to improve the model saving 
+                    #### when performing well
                     self.agent.actor_critic.rep = 0
                 
-                    #if episode_reward > world_record and episode_reward > 2800:
+                    if previous_episode_reward == episode_reward:
+                        episode_reward_repetition = episode_reward_repetition + 1
+                    else:
+                        episode_reward_repetition = 0
+
+                    previous_episode_reward = episode_reward
+
+                    if episode_reward_repetition > 5 and episode_reward > world_record:
+                        print("Saving above the record ")
+                        self.agent.actor_critic.save_model("./modelsaved.pt")
+
+
+                    #if episode_reward > world_record and episode_reward > 2640:
                     #    world_record = episode_reward
                     #    print("Saving new record ")
                     #    self.agent.actor_critic.save_model("./modelsaved.pt")

@@ -1,5 +1,6 @@
 #%% 
 import sys,os
+from datetime import datetime
 
 directory = os.getcwd()
 parentdirectory = os.path.abspath(os.path.join(directory, os.pardir))
@@ -31,13 +32,20 @@ action_type = np.int16
 
 
 ####### training options to be used by the training manager #######
-num_episodes = 10
-episode_length = 100
+num_episodes = 20000
+episode_length = 25
+
 log_file = 'scenario_name_log_file.txt'
+
+time=datetime.now()
+format_time="%Y-%m-%d %H:%M:%S.%f"
+now=datetime.strptime(str(time),format_time)
+log_file = 'lora_log_file_'+str(now.year)+'-'+str(now.month)+'-'+str(now.day)+'-'+str(now.hour)+'-'+str(now.minute)
 
 # neural nets
 device = 'gpu'
 lr = 0.0001
+#lr = 0.001
 
 actor_critic = ACDNN(
             in_features=5,
