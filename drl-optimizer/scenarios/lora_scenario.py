@@ -32,8 +32,9 @@ action_type = np.int16
 
 
 ####### training options to be used by the training manager #######
-num_episodes = 20000
-episode_length = 25
+#num_episodes = 20000
+num_episodes = 30
+episode_length = 30
 
 log_file = 'scenario_name_log_file.txt'
 

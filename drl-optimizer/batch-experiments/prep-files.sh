@@ -1,6 +1,6 @@
 #!/bin/bash
 
-xargs -n 73 < template/startup-template > startup-template-formatted
+xargs -n 66 < template/startup-template > startup-template-formatted
 
 for i in {1..20..1};
 do

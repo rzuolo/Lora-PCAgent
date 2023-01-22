@@ -34,7 +34,8 @@ class LoraCollector232(Env):
         
         
         # Maximum flags for common timer, episode, airbourn cargo, etc
-        self.max_time = 862 #game time insteps
+        #self.max_time = 862 #game time insteps
+        self.max_time = 812 #game time insteps
         #self.max_time = 868
         self.max_tick = 540 #ttl in timesteps
         self.max_cargo = 3000 #maximum allowed buffer (large number because is not in use currently)

@@ -344,12 +344,12 @@ class ACDNN:
         del discounted_r
 
     def save_model(self, path):
-        torch.save(self.model.state_dict(), path)
-        #torch.save(self.model, path)
+        #torch.save(self.model.state_dict(), path)
+        torch.save(self.model, path)
 
     def load_model(self, path):
-        self.model.load_state_dict(torch.load(path))
-        #self.model = torch.load(path)
+        #self.model.load_state_dict(torch.load(path))
+        self.model = torch.load(path)
         self.model.eval()
 
 

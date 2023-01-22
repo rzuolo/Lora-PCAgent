@@ -16,6 +16,8 @@ from AbstractEnvironment import AbstractEnvironement
 
 from collections import deque # to mantian the last k rewards
 
+from datetime import datetime
+
 import matplotlib.pyplot as plt
 from tqdm import trange
 import torch
@@ -168,9 +170,20 @@ class TrainingManager:
                     
                     print('Episode:{}\treward:{}\tsteps:{}'.format(i, episode_reward, step))
                     
+                    
+                    self.agent.actor_critic.rep = 0
+                    
                     #### Some jury-rigged code to improve the model saving 
                     #### when performing well
-                    self.agent.actor_critic.rep = 0
+              
+                    if (i%500 == 0):
+                        time=datetime.now()
+                        format_time="%Y-%m-%d %H:%M:%S.%f"
+                        now=datetime.strptime(str(time),format_time)
+                        model_file = 'saved_model_'+str(episode_reward)+str(now.year)+'-'+str(now.month)+'-'+str(now.day)+'-'+str(now.hour)+'-'+str(now.minute)+'-'+str(now.second)+'.pt'
+                        print("Saving model ")
+                        self.agent.actor_critic.save_model(model_file)
+
                 
                     if previous_episode_reward == episode_reward:
                         episode_reward_repetition = episode_reward_repetition + 1
@@ -221,7 +234,7 @@ class TrainingManager:
         #    print(param_tensor, "\t", self.agent.actor_critic.model.state_dict()[param_tensor].size())
         self.agent.actor_critic.load_model("./modelsaved.pt")
         #self.agent.actor_critic.model.load_state_dict(torch.load('./modelsaved'))
-        self.agent.actor_critic.model.eval()
+        #self.agent.actor_critic.model.eval()
         
         #print("model loaded")
         #for param_tensor in self.agent.actor_critic.model.state_dict():
