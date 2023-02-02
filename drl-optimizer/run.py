@@ -26,21 +26,22 @@ def check_args():
     global TEST
     global upperbound
 
+
     if len(sys.argv) == 3:
         if sys.argv[1] == "train" :
             TRAIN = True
             TEST = False
+            upperbound = sys.argv[2]
         else:
             if sys.argv[1] == "test" :
                 TRAIN = False
                 TEST = True
             else:
-                print("Error! You need to provide an input argument for selecting between \"run.py test\" and \"run.py training\"")
+                print("Error! You need to provide an input argument for selecting between \"run.py test\" and \"run.py train\"")
                 sys.exit()
             
-            upperbound = sys.argv[2]
     else:
-        print("Error! You need to provide an input argument for selecting between \"run.py test\" and \"run.py training\"")
+        print("Error! You need to provide an input argument for selecting between \"run.py test\" and \"run.py train\"")
         sys.exit()
 
 

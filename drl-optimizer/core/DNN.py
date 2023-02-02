@@ -65,7 +65,7 @@ class Critic(nn.Module):
 
 
         
-        self.timedecoder = nn.Sequential(nn.Linear(8*hidden_size, 1))
+        #self.timedecoder = nn.Sequential(nn.Linear(8*hidden_size, 1))
                                          
                 
 
@@ -88,7 +88,7 @@ class Critic(nn.Module):
     def forward(self, state, encoder_output, h_n, embdds):
         
         
-        v2 = self.timedecoder(torch.reshape(embdds, (1,(8*self.hidden_size))))
+        #v2 = self.timedecoder(torch.reshape(embdds, (1,(8*self.hidden_size))))
         
         # call encoder, it will take care of state initialization
         encoder_output, (h_n, c_n), embdds = self.encoder(state) # it returns output, hidden, embed
@@ -116,7 +116,7 @@ class Critic(nn.Module):
         #print(self.tanh(float(v2)))
         #print(" Timedecoder ", v2)
         
-        v2 = self.tanh(float(v2))
+        #v2 = self.tanh(float(v2))
         
         
         for _ in range(self.num_process_blocks):
@@ -125,8 +125,8 @@ class Critic(nn.Module):
 
         # decode query
         v = self.decoder(q) # decoder_output is the value function of the critic
- 
-        
+
+        #print("critic ",float(v))
         return v
         
 
@@ -285,7 +285,13 @@ class ACDNN:
         # normalize discounted_r
         # critic loss
         adv = discounted_r.detach() - values
-        #adv2 = discounted_r.detach() 
+
+        times = times.squeeze(1)
+        maxtimes = torch.max(times,1).values.unsqueeze(1)
+
+        print("maxtimes ",maxtimes)
+        adv2 = maxtimes
+        #adv2 = discounted_r.detach() - torch.max(times,1).values.unsqueeze(1)
         
         critic_loss = 0.5 * adv.pow(2).mean()
         #critic_loss = F.smooth_l1_loss(values.double(), discounted_r.detach())
@@ -299,9 +305,25 @@ class ACDNN:
         # time loss
         #time_loss = ((times.max()-times.mean())*discounted_r.detach().mean())
         #print("####################################################################")
-        delta = times-times.mean() 
-        delta = delta.pow(2).mean()
-        time_loss = delta.mean()*adv.detach().mean()
+        
+        #### working with no fundamental rationale
+        #delta = times-times.mean() 
+        #delta = delta.pow(2).mean()
+        #time_loss = delta.mean()*adv.detach().mean()
+        
+        #delta = times.mean() 
+        time_loss = 0.5 * adv2.pow(2).mean()
+        #print(times,times.mean())
+        #delta = times * discounted_r.detach().mean()
+        
+
+        #time_loss = delta.mean()
+        #print(float(time_loss))
+        #print(critic_loss)
+        #time_loss = delta
+        #time_loss = delta.mean()*critic_loss
+        #### 
+        ## 
         #time_loss = a*discounted_r.detach().mean()
 
         #print(time_loss)
@@ -325,7 +347,8 @@ class ACDNN:
         #print(" timeloss ", time_loss)
         #print(" critic_loss ", critic_loss)
 
-        loss = actor_loss - entropy_factor * entropy + critic_loss + time_loss
+        #loss = actor_loss - entropy_factor * entropy + critic_loss + time_loss
+        loss = actor_loss - entropy_factor * entropy + (critic_loss * time_loss)
         #loss = actor_loss - entropy_factor * entropy + critic_loss + time_loss*0.00000001 
         #loss = actor_loss - entropy_factor * entropy + critic_loss + time_loss*1000000
         #loss = time_loss 
@@ -386,9 +409,18 @@ class Time(nn.Module):
                                 )
 
         # encoder is two hidden linear layers as in https://arxiv.org/pdf/1611.09940.pdf
+        #self.decoder = nn.Sequential(nn.Linear(2*hidden_size, 2*hidden_size),
+        #                            nn.ReLU(),
+        #                            nn.Linear(2*hidden_size, 4))
+        
         self.decoder = nn.Sequential(nn.Linear(2*hidden_size, 2*hidden_size),
                                     nn.ReLU(),
-                                    nn.Linear(2*hidden_size, 4))
+                                    nn.Linear(2*hidden_size, 4),
+                                    nn.Softmax())
+                                    
+                                    #nn.ReLU(),
+                                    #nn.Tanh())
+                                    #nn.Sigmoid())
 
 
         
@@ -465,6 +497,8 @@ class Time(nn.Module):
         #v = math.log(v)
         #v = torch.tanh(v.detach().cpu())
         #print(" v ",torch.tanh(torch.max(v)))
+        #print("Time ",v)
+        #print("Time mean",float(v.mean()))
         return v
 
 

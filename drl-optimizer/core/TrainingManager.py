@@ -53,9 +53,17 @@ class TrainingManager:
         different timesteps durations: 25, 50, 75 or 100
     """
     def timestep_converter(self,timetensor):
-        
+       
+
         timestep_index = int(torch.argmax(timetensor))
+        #timestep_float = float(timetensor)
+       
+        #print(timestep_float)
+        #timestep_real = int(timestep_float/0.25)
+        #print(timestep_real)
+       
         timestep_length = 25 + (timestep_index*25)
+        #timestep_length = (timestep_real*25)
         return timestep_length
 
     def run(self, worldrecord, verbose=False, plot=False, save_to_file=True, parallel=False):
@@ -206,8 +214,8 @@ class TrainingManager:
                 last_rewards.append(episode_reward)
                 average_reward = sum(last_rewards)/self.average_reward_steps
                 all_average_reward.append(average_reward)
-                log.write(str(step)+ "\t" + str(episode_reward)+ "\t" + str(average_reward) + "\tActions list:" + str(actions_list) + "\n")
-                log.write(str(step)+ "\t" + str(episode_reward)+ "\t" + str(average_reward) + "\tTime list:" + str(time_list) + "\n")
+                log.write(str(i) +" "+ str(step)+ "\t" + str(episode_reward)+ "\t" + str(average_reward) + "\tActions list:" + str(actions_list) + "\n")
+                log.write(str(i) +" "+ str(step)+ "\t" + str(episode_reward)+ "\t" + str(average_reward) + "\tTime list:" + str(time_list) + "\n")
                 log.flush()
         
         self.agent.actor_critic.save_model("./modelsaved.pt")
@@ -234,9 +242,9 @@ class TrainingManager:
         #    print(param_tensor, "\t", self.agent.actor_critic.model.state_dict()[param_tensor].size())
         self.agent.actor_critic.load_model("./modelsaved.pt")
         #self.agent.actor_critic.model.load_state_dict(torch.load('./modelsaved'))
-        #self.agent.actor_critic.model.eval()
-        
+        self.agent.actor_critic.model.eval()
         #print("model loaded")
+        
         #for param_tensor in self.agent.actor_critic.model.state_dict():
         #    print(param_tensor, "\t", self.agent.actor_critic.model.state_dict()[param_tensor].size())
         # validate the agent is ready for training

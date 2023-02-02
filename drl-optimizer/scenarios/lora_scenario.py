@@ -33,7 +33,7 @@ action_type = np.int16
 
 ####### training options to be used by the training manager #######
 #num_episodes = 20000
-num_episodes = 30
+num_episodes = 20000
 episode_length = 30
 
 log_file = 'scenario_name_log_file.txt'
@@ -45,8 +45,9 @@ log_file = 'lora_log_file_'+str(now.year)+'-'+str(now.month)+'-'+str(now.day)+'-
 
 # neural nets
 device = 'gpu'
-lr = 0.0001
+#lr = 0.0001
 #lr = 0.001
+lr = 0.0001
 
 actor_critic = ACDNN(
             in_features=5,
@@ -63,6 +64,7 @@ actor_critic = ACDNN(
 # agent
 discount_factor = 0.99
 entropy_factor = 0.00001
+#entropy_factor = 0.00001
 #entropy_factor = 10000000000
 
 agent = PCAgent(state_size=state_size, 
