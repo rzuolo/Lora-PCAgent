@@ -288,15 +288,18 @@ class ACDNN:
         # normalize discounted_r
         # critic loss
         adv = discounted_r.detach() - values 
-        adv2 = discounted_r.detach() - (times*100000)
+        #adv2 = discounted_r.detach() - (times*100000)
         
-        #times = times.squeeze(1)
-        #maxtimes = torch.max(times,1).values.unsqueeze(1)
-        #meantimes = times.mean(1).unsqueeze(1)
-        #deltatimes = maxtimes - meantimes
-        #print("maxtimes ",maxtimes)
-        #adv2 = maxtimes 
-        #print("meantimes ",meantimes)
+        times = times.squeeze(1)
+        maxtimes = torch.max(times,1).values.unsqueeze(1)
+        mintimes = torch.min(times,1).values.unsqueeze(1)
+        meantimes = times.mean(1).unsqueeze(1)
+        deltatimes = maxtimes - meantimes
+        #print("maxtimes meantimes delta",maxtimes,meantimes,deltatimes)
+        adv2 = discounted_r.detach() - maxtimes - mintimes
+        #adv2 = maxtimes - meantimes*adv
+        adv2 = (adv2.detach().mean()).pow(2)*0.5
+        #print("meantimes ",adv2.detach().mean()))
         #adv2 = discounted_r.detach() - times.mean()
         #time_loss = (0.5 * adv2.pow(2)).mean()
         
@@ -323,9 +326,10 @@ class ACDNN:
         #delta = delta.pow(2).mean()
         
 
-        time_loss = float(times.mean())**2*adv.pow(2).mean()
+        #time_loss = float(times.mean())**2*adv.pow(2).mean()
+        time_loss = adv2
         #time_loss = 0.5 * adv2.pow(2).mean()
-        print(float(time_loss),float(critic_loss),float(actor_loss))
+        print(time_loss,critic_loss,actor_loss)
          
          
         #delta = times.mean() 
@@ -367,7 +371,7 @@ class ACDNN:
         #print(" timeloss ", time_loss)
         #print(" critic_loss ", critic_loss)
 
-        loss = actor_loss - entropy_factor * entropy + critic_loss + time_loss
+        loss = actor_loss - entropy_factor * entropy + critic_loss * time_loss
         #loss = actor_loss - entropy_factor * entropy + (critic_loss * time_loss)
         #loss = actor_loss - entropy_factor * entropy + critic_loss + time_loss*0.00000001 
         #loss = actor_loss - entropy_factor * entropy + critic_loss + time_loss*1000000
@@ -433,15 +437,17 @@ class Time(nn.Module):
         #                            nn.ReLU(),
         #                            nn.Linear(2*hidden_size, 4))
         
-        self.decoder = nn.Sequential(nn.Linear(2*hidden_size, 4*hidden_size),
+        self.decoder = nn.Sequential(nn.Linear(2*hidden_size, 2*hidden_size),
                                     #nn.ReLU(),
                                     #nn.LeakyReLU(),
-                                    nn.Linear(4*hidden_size, 2*hidden_size),
-                                    #nn.LeakyReLU(),
+                                    nn.Linear(2*hidden_size, 4*hidden_size),
                                     #nn.ReLU(),
-                                    nn.Linear(2*hidden_size, 1),
+                                    nn.Linear(4*hidden_size, 8*hidden_size),
+                                    #nn.ReLU(),
+                                    nn.Linear(8*hidden_size, 4))
+                                    #nn.LeakyReLU(),
                                     #nn.Softmax())
-                                    nn.Tanh())
+                                    #nn.Tanh())
                                     #nn.Sigmoid())
 
 

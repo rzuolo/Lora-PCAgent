@@ -55,18 +55,21 @@ class TrainingManager:
     def timestep_converter(self,timetensor):
        
 
-        #timestep_index = int(torch.argmax(timetensor))
-        timestep_float = (float(timetensor)*100)+1
+        timetensor=timetensor.softmax(dim=1)
+        print(timetensor)
+        timestep_index = int(torch.argmax(timetensor))
+        #timestep_float = (float(timetensor)*100)+1
 
 
        
         #print(timestep_float)
-        timestep_real = int(timestep_float/0.5)-1
+        #timestep_real = int(timestep_float/0.5)-1
         #timestep_real = int(timestep_float/0.5)+1
+        #print(timestep_index)
         #print(timestep_real)
        
-        #timestep_length = 25 + (timestep_index*25)
-        timestep_length = (timestep_real*25)
+        timestep_length = 25 + (timestep_index*25)
+        #timestep_length = (timestep_real*25)
         return timestep_length
 
     def run(self, worldrecord, verbose=False, plot=False, save_to_file=True, parallel=False):
