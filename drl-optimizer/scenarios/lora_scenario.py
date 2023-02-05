@@ -47,7 +47,7 @@ log_file = 'lora_log_file_'+str(now.year)+'-'+str(now.month)+'-'+str(now.day)+'-
 device = 'gpu'
 #lr = 0.0001
 #lr = 0.001
-lr = 0.0001
+lr = 0.001
 
 actor_critic = ACDNN(
             in_features=5,

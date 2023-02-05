@@ -96,6 +96,7 @@ class PCAgent(AbstractAgent):
 
             # calculate the discounted reward
             self.rewards.append(reward)
+
             discounted_rewards = np.zeros(len(self.values))
             for i in reversed(range(len(self.rewards))):
                 last_value = self.rewards[i] + self.discount_factor * last_value

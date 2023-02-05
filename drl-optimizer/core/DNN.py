@@ -282,23 +282,34 @@ class ACDNN:
         times = torch.stack(times).to(self.model.device)
         log_probs = torch.stack(log_probs).to(self.model.device)
         entropy = torch.stack(entropy).sum().to(self.model.device)
+        
+        #print("times values ",float(times.mean()*100000),float(values.mean()))
+        
         # normalize discounted_r
         # critic loss
-        adv = discounted_r.detach() - values
-
-        times = times.squeeze(1)
-        maxtimes = torch.max(times,1).values.unsqueeze(1)
-
-        print("maxtimes ",maxtimes)
-        adv2 = maxtimes
-        #adv2 = discounted_r.detach() - torch.max(times,1).values.unsqueeze(1)
+        adv = discounted_r.detach() - values 
+        adv2 = discounted_r.detach() - (times*100000)
+        
+        #times = times.squeeze(1)
+        #maxtimes = torch.max(times,1).values.unsqueeze(1)
+        #meantimes = times.mean(1).unsqueeze(1)
+        #deltatimes = maxtimes - meantimes
+        #print("maxtimes ",maxtimes)
+        #adv2 = maxtimes 
+        #print("meantimes ",meantimes)
+        #adv2 = discounted_r.detach() - times.mean()
+        #time_loss = (0.5 * adv2.pow(2)).mean()
+        
         
         critic_loss = 0.5 * adv.pow(2).mean()
         #critic_loss = F.smooth_l1_loss(values.double(), discounted_r.detach())
 
+        
         # actor loss
         actor_loss = -(log_probs * adv.detach()).mean()
 
+
+        
         #time_super_loss = entropy.mean()*times.mean() 
         #print("super_time_loss ",time_super_loss)
         #print(" Time super loss ", time_super_loss.mean())
@@ -308,12 +319,19 @@ class ACDNN:
         
         #### working with no fundamental rationale
         #delta = times-times.mean() 
+        #delta = delta.mean()*adv.detach().mean()
         #delta = delta.pow(2).mean()
-        #time_loss = delta.mean()*adv.detach().mean()
         
+
+        time_loss = float(times.mean())**2*adv.pow(2).mean()
+        #time_loss = 0.5 * adv2.pow(2).mean()
+        print(float(time_loss),float(critic_loss),float(actor_loss))
+         
+         
         #delta = times.mean() 
-        time_loss = 0.5 * adv2.pow(2).mean()
-        #print(times,times.mean())
+        #time_loss = 0.5 * adv2.pow(2).mean()
+        #time_loss = meantimes.mean()
+        #print("times ",times.mean())
         #delta = times * discounted_r.detach().mean()
         
 
@@ -328,8 +346,10 @@ class ACDNN:
 
         #print(time_loss)
         #print(a)
+        #print("reward ",discounted_r.detach())
         #print(discounted_r.detach().size())
-        #print(adv.size())
+        #print("values ", values)
+        #print("adv ",adv.mean())
         #print("####################################################################")
         #time_loss = (times.mean()*0.0001*discounted_r.detach().mean())
          
@@ -347,8 +367,8 @@ class ACDNN:
         #print(" timeloss ", time_loss)
         #print(" critic_loss ", critic_loss)
 
-        #loss = actor_loss - entropy_factor * entropy + critic_loss + time_loss
-        loss = actor_loss - entropy_factor * entropy + (critic_loss * time_loss)
+        loss = actor_loss - entropy_factor * entropy + critic_loss + time_loss
+        #loss = actor_loss - entropy_factor * entropy + (critic_loss * time_loss)
         #loss = actor_loss - entropy_factor * entropy + critic_loss + time_loss*0.00000001 
         #loss = actor_loss - entropy_factor * entropy + critic_loss + time_loss*1000000
         #loss = time_loss 
@@ -413,13 +433,15 @@ class Time(nn.Module):
         #                            nn.ReLU(),
         #                            nn.Linear(2*hidden_size, 4))
         
-        self.decoder = nn.Sequential(nn.Linear(2*hidden_size, 2*hidden_size),
-                                    nn.ReLU(),
-                                    nn.Linear(2*hidden_size, 4),
-                                    nn.Softmax())
-                                    
+        self.decoder = nn.Sequential(nn.Linear(2*hidden_size, 4*hidden_size),
                                     #nn.ReLU(),
-                                    #nn.Tanh())
+                                    #nn.LeakyReLU(),
+                                    nn.Linear(4*hidden_size, 2*hidden_size),
+                                    #nn.LeakyReLU(),
+                                    #nn.ReLU(),
+                                    nn.Linear(2*hidden_size, 1),
+                                    #nn.Softmax())
+                                    nn.Tanh())
                                     #nn.Sigmoid())
 
 
