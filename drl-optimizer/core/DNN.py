@@ -287,10 +287,17 @@ class ACDNN:
         adv = discounted_r.detach() - values
 
         times = times.squeeze(1)
-        maxtimes = torch.max(times,1).values.unsqueeze(1)
-
-        print("maxtimes ",maxtimes)
-        adv2 = maxtimes
+        #maxtimes = torch.max(times,1).values.unsqueeze(1)
+        #mintimes = torch.min(times,1).values.unsqueeze(1)
+        meantimes = times.mean(1).unsqueeze(1)
+        #deltatimes = maxtimes - meantimes
+        #print("maxtimes meantimes delta",maxtimes,meantimes,deltatimes)
+        #adv2 = discounted_r.detach() * deltatimes
+        adv2 = discounted_r.detach() - meantimes
+        #adv2 = maxtimes - meantimes*adv
+        #adv2 = (adv2.detach().mean()).pow(2)*0.5
+        #print("maxtimes ",maxtimes)
+        #time_loss = adv2
         #adv2 = discounted_r.detach() - torch.max(times,1).values.unsqueeze(1)
         
         critic_loss = 0.5 * adv.pow(2).mean()
@@ -312,7 +319,8 @@ class ACDNN:
         #time_loss = delta.mean()*adv.detach().mean()
         
         #delta = times.mean() 
-        time_loss = 0.5 * adv2.pow(2).mean()
+        #time_loss = 0.5 * adv2.pow(2).mean()
+        time_loss = meantimes.mean()
         #print(times,times.mean())
         #delta = times * discounted_r.detach().mean()
         
@@ -347,8 +355,8 @@ class ACDNN:
         #print(" timeloss ", time_loss)
         #print(" critic_loss ", critic_loss)
 
-        #loss = actor_loss - entropy_factor * entropy + critic_loss + time_loss
-        loss = actor_loss - entropy_factor * entropy + (critic_loss * time_loss)
+        loss = actor_loss - entropy_factor * entropy + critic_loss * time_loss
+        #loss = actor_loss - entropy_factor * entropy + (critic_loss * time_loss)
         #loss = actor_loss - entropy_factor * entropy + critic_loss + time_loss*0.00000001 
         #loss = actor_loss - entropy_factor * entropy + critic_loss + time_loss*1000000
         #loss = time_loss 
@@ -414,13 +422,19 @@ class Time(nn.Module):
         #                            nn.Linear(2*hidden_size, 4))
         
         self.decoder = nn.Sequential(nn.Linear(2*hidden_size, 2*hidden_size),
-                                    nn.ReLU(),
-                                    nn.Linear(2*hidden_size, 4),
-                                    nn.Softmax())
+                                    #nn.Linear(2*hidden_size, 4*hidden_size),
+                                    #nn.Linear(4*hidden_size, 2*hidden_size),
+                                    #nn.ReLU(),
+                                    nn.Linear(2*hidden_size, 1),
+
+                                    #nn.Linear(2*hidden_size, 4*hidden_size),
+                                    #nn.ReLU(),
+                                    #nn.ReLU(),
+                                    #nn.Softmax())
                                     
                                     #nn.ReLU(),
                                     #nn.Tanh())
-                                    #nn.Sigmoid())
+                                    nn.Sigmoid())
 
 
         
