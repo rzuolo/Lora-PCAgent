@@ -14,7 +14,7 @@ from AbstractAgent import AbstractAgent
 
 
 import numpy as np
-
+import torch 
 
 class PCAgent(AbstractAgent):
     def __init__(self,
@@ -60,6 +60,8 @@ class PCAgent(AbstractAgent):
         # the reward will be added in the learn function.
         # the reason is that the reward is not avialable now
         self.values.append(v)
+        #print(f'  times:{self.times}')
+        #self.times.append(25*(torch.argmax(time)+25))
         self.times.append(time)
         self.log_probs.append(log_probs)
         self.entropy.append(entropy)

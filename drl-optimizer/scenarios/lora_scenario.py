@@ -63,7 +63,8 @@ actor_critic = ACDNN(
 
 # agent
 discount_factor = 0.99
-entropy_factor = 0.00001
+entropy_factor = 0.001
+#entropy_factor = 0.00001
 #entropy_factor = 0.00001
 #entropy_factor = 10000000000
 

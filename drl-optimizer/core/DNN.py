@@ -284,13 +284,30 @@ class ACDNN:
         entropy = torch.stack(entropy).sum().to(self.model.device)
         # normalize discounted_r
         # critic loss
-        adv = discounted_r.detach() - values
 
-        times = times.squeeze(1)
-        maxtimes = torch.max(times,1).values.unsqueeze(1)
+        #times = times.squeeze(1)
+        #a,b = torch.max(times,dim=2)
+        a = torch.std(times,dim=2).unsqueeze(-1)
+        times = a
+        #times = a.unsqueeze(dim=-1)
+        #print(f'times_size:{times.size()} times:{times}')
+        #print(f'values_size:{times.size()} values:{values}')
+        #print(f'values:{values.size()}')
+        #print(f'discounted:{discounted_r.detach().size()}')
+        #print(f'argmax:{((torch.argmax(times,dim=1).unsqueeze(dim=-1)))}')
+        #adv = (discounted_r.detach() - values ) * (25+(torch.argmax(times,dim=2)*25) )
+        adv = (discounted_r.detach() - values  + times) 
 
-        print("maxtimes ",maxtimes)
-        adv2 = maxtimes
+
+        #times = times.squeeze(1)
+        #print(f'times.shape:{times.shape} times.std:{times.std()} times:{times}')
+        #maxtimes = torch.max(times,1).values.unsqueeze(1)
+
+        #print("maxtimes ",maxtimes)
+        #adv2 = times.std() #working somehow well
+        #adv2 = times.std() * adv.detach()
+        
+        #adv2 =(maxtimes - times.mean() ) * discounted_r.detach() ## this is doing well
         #adv2 = discounted_r.detach() - torch.max(times,1).values.unsqueeze(1)
         
         critic_loss = 0.5 * adv.pow(2).mean()
@@ -307,12 +324,17 @@ class ACDNN:
         #print("####################################################################")
         
         #### working with no fundamental rationale
+        ####
         #delta = times-times.mean() 
         #delta = delta.pow(2).mean()
         #time_loss = delta.mean()*adv.detach().mean()
-        
+        ######
+        ######
+
         #delta = times.mean() 
-        time_loss = 0.5 * adv2.pow(2).mean()
+        #time_loss = 0.5 * adv2.pow(2).mean()
+        #time_loss =  adv2.mean()
+        #time_loss = times.mean()
         #print(times,times.mean())
         #delta = times * discounted_r.detach().mean()
         
@@ -347,8 +369,9 @@ class ACDNN:
         #print(" timeloss ", time_loss)
         #print(" critic_loss ", critic_loss)
 
-        #loss = actor_loss - entropy_factor * entropy + critic_loss + time_loss
-        loss = actor_loss - entropy_factor * entropy + (critic_loss * time_loss)
+        #loss = times.mean()
+        loss = actor_loss - entropy_factor * entropy + critic_loss 
+        #loss = actor_loss - entropy_factor * entropy + (critic_loss * time_loss)
         #loss = actor_loss - entropy_factor * entropy + critic_loss + time_loss*0.00000001 
         #loss = actor_loss - entropy_factor * entropy + critic_loss + time_loss*1000000
         #loss = time_loss 
@@ -415,8 +438,12 @@ class Time(nn.Module):
         
         self.decoder = nn.Sequential(nn.Linear(2*hidden_size, 2*hidden_size),
                                     nn.ReLU(),
-                                    nn.Linear(2*hidden_size, 4),
-                                    nn.Softmax())
+                                    #nn.Linear(2*hidden_size, 2*hidden_size),
+                                    #nn.ReLU(),
+                                    #nn.Linear(4*hidden_size, 4*hidden_size),
+                                    #nn.ReLU(),
+                                    nn.Linear(2*hidden_size, 4))
+                                    #nn.Softmax())
                                     
                                     #nn.ReLU(),
                                     #nn.Tanh())
