@@ -203,11 +203,11 @@ class PointerCriticArch(nn.Module):
         #v, time = self.critic(state, encoder_output, h_n, embdds).squeeze(-1)
         
         v    = self.critic(state, encoder_output, h_n, embdds)
-        time = self.time(state, encoder_output, h_n, embdds)
+        time, time_probs = self.time(state, encoder_output, h_n, embdds)
         
         #time = 100
         #v = 0
-        return v, probs, act, time
+        return v, probs, act, time, time_probs
     
 
 
@@ -231,37 +231,43 @@ class ACDNN:
    
         
     def predict(self, source, masks):
-        v, probs, _, time = self.model(source, masks)
+        v, probs, _, time, time_probs = self.model(source, masks)
         #### add time influence onto v
         #print(f'v before:{v} time:{time}')
         #v = (v/((torch.argmax(time)/4)+0.25))
         #print(f'v after:{v2} time:{time}')
-        return v.detach().cpu().item(), probs.detach().cpu().numpy()
+        return v.detach().cpu().item(), probs.detach().cpu().numpy(), time_probs.detach().cpu().numpy()
         #return v.detach().cpu().item(), time.detach().cpu().item(), probs.detach().cpu().numpy()
     
     def stochastic_predict(self, source, masks):
-        v, probs, action, time = self.model(source, masks)
+        v, probs, action, time, time_probs = self.model(source, masks)
         dist = torch.distributions.Categorical(probs)
+        dist_time = torch.distributions.Categorical(time_probs)
 
         #action = dist.sample(). this is used during the training
         action = dist.sample()
+        time = dist_time.sample ()
         #time = dist.sample()
         #action = torch.argmax(probs)
-        return v.detach().cpu().item(), probs.detach().cpu().numpy(), action.detach().cpu().item(), time
+        return v.detach().cpu().item(), probs.detach().cpu().numpy(), action.detach().cpu().item(), time, times_probs.detach().cpu().numpy()
 
     def collect(self, source, masks):
         
         #print("source-masks ", source, masks )
-        v, probs, action, time = self.model(source, masks)
+        v, probs, action, time, time_probs = self.model(source, masks)
               
         dist = torch.distributions.Categorical(probs)
         action = dist.sample()
         log_probs = dist.log_prob(action)
+        
+        dist_times = torch.distributions.Categorical(time_probs)
+        time = dist_times.sample()
+        log_time_probs = dist_times.log_prob(time)
        
         ### leave it or sum up/avg *if needed
         entropy = dist.entropy().mean()
         #entropy = torch.zeros(1)
-        return v, time, action.cpu().detach().item(), log_probs, entropy
+        return v, time, action.cpu().detach().item(), log_probs, log_time_probs, entropy
     
     
     def calc_loss(self,
@@ -269,6 +275,7 @@ class ACDNN:
                     values,
                     times,
                     log_probs,
+                    log_time_probs,
                     entropy,
                     entropy_factor=0.01):
         """ Calculate the loss function and do the backward step
@@ -286,18 +293,19 @@ class ACDNN:
         values = torch.stack(values).to(self.model.device)
         times = torch.stack(times).to(self.model.device)
         log_probs = torch.stack(log_probs).to(self.model.device)
+        log_time_probs = torch.stack(log_time_probs).to(self.model.device)
         entropy = torch.stack(entropy).sum().to(self.model.device)
         # normalize discounted_r
         # critic loss
 
         #times = times.squeeze(1)
-        a,b = torch.max(times,dim=2)
+        #a,b = torch.max(times,dim=2)
         #print(f'times_size:{times.size()} arg_times:{((torch.argmax(times,dim=2))/4)+0.25}')
-        selected_idx=((torch.argmax(times,dim=2))+1)
+        #selected_idx=((torch.argmax(times,dim=2))+1)
         
         #print(f'times:{times}')
-        a = torch.std(times,dim=2).unsqueeze(-1)
-        times = a.squeeze(1)
+        #a = torch.std(times,dim=2).unsqueeze(-1)
+        #times = a.squeeze(1)
         #print(f'times22:{times}')
         #a, b = torch.max(times,dim=2)
         #times = a.unsqueeze(-1)
@@ -316,7 +324,8 @@ class ACDNN:
         #print(values) 
         #adv = (discounted_r.detach() - (values / (selected_idx/4)) )
         #print(f'argmax:{selected_idx} discounted:{times/(selected_idx/4)}')
-        adv = (discounted_r.detach() - values + (times/(selected_idx/4)) )
+        #adv = (discounted_r.detach() - values + (times/(selected_idx/4)) )
+        adv = ( discounted_r.detach() - values )
         #adv = (discounted_r.detach() - values) / (times/(selected_idx/4))
         #adv = (discounted_r.detach() - values) + times 
         #adv = (discounted_r.detach())/(selected_idx/4) 
@@ -340,7 +349,7 @@ class ACDNN:
         #critic_loss = F.smooth_l1_loss(values.double(), discounted_r.detach())
 
         # actor loss
-        actor_loss = -(log_probs * adv.detach()).mean()
+        actor_loss = -( (log_probs + log_time_probs) * adv.detach()).mean()
 
         #time_super_loss = entropy.mean()*times.mean() 
         #print("super_time_loss ",time_super_loss)
@@ -412,6 +421,7 @@ class ACDNN:
 
         del entropy
         del log_probs
+        del log_time_probs
         del values
         del times
         del discounted_r
@@ -469,8 +479,8 @@ class Time(nn.Module):
                                     #nn.ReLU(),
                                     #nn.Linear(4*hidden_size, 4*hidden_size),
                                     #nn.ReLU(),
-                                    nn.Linear(2*hidden_size, 4))
-                                    #nn.Softmax())
+                                    nn.Linear(2*hidden_size, 4),
+                                    nn.Softmax())
                                     
                                     #nn.ReLU(),
                                     #nn.Tanh())
@@ -542,7 +552,9 @@ class Time(nn.Module):
             q = torch.bmm(ref,F.softmax(u, dim=1).unsqueeze(-1)).squeeze(-1)
 
         # decode query
-        v = self.decoder(q) # decoder_output is the value function of the critic
+        time_probs = self.decoder(q) # decoder_output is the value function of the critic
+        time = int(time_probs.argmax())
+
         #print(" V em quatro ",v.detach())
         #print(" V em index ", torch.argmax(v))
         #print(" V em softmax ", F.softmax(v,dim=1).detach()) 
@@ -553,6 +565,6 @@ class Time(nn.Module):
         #print(" v ",torch.tanh(torch.max(v)))
         #print("Time ",v)
         #print("Time mean",float(v.mean()))
-        return v
+        return time, time_probs
 
 
