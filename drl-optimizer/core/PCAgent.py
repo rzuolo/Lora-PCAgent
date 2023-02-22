@@ -96,13 +96,14 @@ class PCAgent(AbstractAgent):
             else: # predict the last value from the critic
                 last_value, _ = self.actor_critic.predict(state_, masks)
 
+            #print(f'last:{last_value}')
             # calculate the discounted reward
             self.rewards.append(reward)
             discounted_rewards = np.zeros(len(self.values))
             for i in reversed(range(len(self.rewards))):
                 last_value = self.rewards[i] + self.discount_factor * last_value
                 discounted_rewards[i] = last_value
-            
+                #print(f'rewards:{self.rewards[i]} discounted_rewards:{discounted_rewards[i]} last:{last_value} factor:{self.discount_factor}')
             # update weights by calculating the loss and performing backward
             self.actor_critic.calc_loss(discounted_r=discounted_rewards,
                                         values=self.values,

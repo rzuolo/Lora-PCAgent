@@ -232,6 +232,10 @@ class ACDNN:
         
     def predict(self, source, masks):
         v, probs, _, time = self.model(source, masks)
+        #### add time influence onto v
+        #print(f'v before:{v} time:{time}')
+        #v = (v/((torch.argmax(time)/4)+0.25))
+        #print(f'v after:{v2} time:{time}')
         return v.detach().cpu().item(), probs.detach().cpu().numpy()
         #return v.detach().cpu().item(), time.detach().cpu().item(), probs.detach().cpu().numpy()
     
@@ -253,7 +257,8 @@ class ACDNN:
         dist = torch.distributions.Categorical(probs)
         action = dist.sample()
         log_probs = dist.log_prob(action)
-        
+       
+        ### leave it or sum up/avg *if needed
         entropy = dist.entropy().mean()
         #entropy = torch.zeros(1)
         return v, time, action.cpu().detach().item(), log_probs, entropy
@@ -286,18 +291,37 @@ class ACDNN:
         # critic loss
 
         #times = times.squeeze(1)
-        #a,b = torch.max(times,dim=2)
+        a,b = torch.max(times,dim=2)
+        #print(f'times_size:{times.size()} arg_times:{((torch.argmax(times,dim=2))/4)+0.25}')
+        selected_idx=((torch.argmax(times,dim=2))+1)
+        
+        #print(f'times:{times}')
         a = torch.std(times,dim=2).unsqueeze(-1)
-        times = a
+        times = a.squeeze(1)
+        #print(f'times22:{times}')
+        #a, b = torch.max(times,dim=2)
+        #times = a.unsqueeze(-1)
         #times = a.unsqueeze(dim=-1)
-        #print(f'times_size:{times.size()} times:{times}')
         #print(f'values_size:{times.size()} values:{values}')
         #print(f'values:{values.size()}')
-        #print(f'discounted:{discounted_r.detach().size()}')
+        #print(f'discounted_size:{discounted_r.detach().size()} rewards:{discounted_r.detach()}')
         #print(f'argmax:{((torch.argmax(times,dim=1).unsqueeze(dim=-1)))}')
         #adv = (discounted_r.detach() - values ) * (25+(torch.argmax(times,dim=2)*25) )
-        adv = (discounted_r.detach() - values  + times) 
-
+        
+        #adv = (discounted_r.detach() - values )
+        ####adv = (discounted_r.detach() - values + times)
+        #adv = (discounted_r.detach() - values) + (times/(selected_idx/4))
+        #print(f'selected:{selected_idx}')
+        #print(f'argmax:{selected_idx.size()} another:{times.size()} ')
+        #print(values) 
+        #adv = (discounted_r.detach() - (values / (selected_idx/4)) )
+        #print(f'argmax:{selected_idx} discounted:{times/(selected_idx/4)}')
+        adv = (discounted_r.detach() - values + (times/(selected_idx/4)) )
+        #adv = (discounted_r.detach() - values) / (times/(selected_idx/4))
+        #adv = (discounted_r.detach() - values) + times 
+        #adv = (discounted_r.detach())/(selected_idx/4) 
+        #adv = adv - values
+        #print("adv ",adv)
 
         #times = times.squeeze(1)
         #print(f'times.shape:{times.shape} times.std:{times.std()} times:{times}')
@@ -311,6 +335,8 @@ class ACDNN:
         #adv2 = discounted_r.detach() - torch.max(times,1).values.unsqueeze(1)
         
         critic_loss = 0.5 * adv.pow(2).mean()
+        #critic_loss = adv.mean()
+        
         #critic_loss = F.smooth_l1_loss(values.double(), discounted_r.detach())
 
         # actor loss
@@ -321,6 +347,7 @@ class ACDNN:
         #print(" Time super loss ", time_super_loss.mean())
         # time loss
         #time_loss = ((times.max()-times.mean())*discounted_r.detach().mean())
+        #time_loss = ((selected_idx/4))
         #print("####################################################################")
         
         #### working with no fundamental rationale

@@ -56,6 +56,7 @@ class TrainingManager:
        
 
         timestep_index = int(torch.argmax(timetensor))
+        #print("index now is ",timestep_index)
         #timestep_float = float(timetensor)
        
         #print(timestep_float)
