@@ -236,8 +236,8 @@ class ACDNN:
         #print(f'v before:{v} time:{time}')
         #v = (v/((torch.argmax(time)/4)+0.25))
         #print(f'v after:{v2} time:{time}')
-        return v.detach().cpu().item(), probs.detach().cpu().numpy(), time_probs.detach().cpu().numpy()
-        #return v.detach().cpu().item(), time.detach().cpu().item(), probs.detach().cpu().numpy()
+        return v.detach().cpu().item(), probs.detach().cpu().numpy()
+        #return v.detach().cpu().item(), time.detach().cpu().item(), probs.detach().cpu().numpy(), time_probs.detach().cpu().numpy()
     
     def stochastic_predict(self, source, masks):
         v, probs, action, time, time_probs = self.model(source, masks)
@@ -249,7 +249,7 @@ class ACDNN:
         time = dist_time.sample ()
         #time = dist.sample()
         #action = torch.argmax(probs)
-        return v.detach().cpu().item(), probs.detach().cpu().numpy(), action.detach().cpu().item(), time, times_probs.detach().cpu().numpy()
+        return v.detach().cpu().item(), probs.detach().cpu().numpy(), action.detach().cpu().item(), time, time_probs.detach().cpu().numpy()
 
     def collect(self, source, masks):
         
@@ -298,6 +298,8 @@ class ACDNN:
         # normalize discounted_r
         # critic loss
 
+        #print(f'log_time_probs:{log_time_probs} log_probs:{log_probs}')
+        #print(f'values_size:{times.size()} values:{values}')
         #times = times.squeeze(1)
         #a,b = torch.max(times,dim=2)
         #print(f'times_size:{times.size()} arg_times:{((torch.argmax(times,dim=2))/4)+0.25}')

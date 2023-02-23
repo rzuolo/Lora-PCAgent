@@ -46,8 +46,8 @@ log_file = 'lora_log_file_'+str(now.year)+'-'+str(now.month)+'-'+str(now.day)+'-
 # neural nets
 device = 'gpu'
 #lr = 0.0001
-lr = 0.001
-#lr = 0.0001
+#lr = 0.001
+lr = 0.0001
 
 actor_critic = ACDNN(
             in_features=5,
@@ -64,10 +64,10 @@ actor_critic = ACDNN(
 # agent
 discount_factor = 0.99
 #entropy_factor = 0.1
-entropy_factor = 0.001
+#entropy_factor = 0.001
 #entropy_factor = 0.0001
 #entropy_factor = 0.00001
-#entropy_factor = 0.00001
+entropy_factor = 0.00001
 #entropy_factor = 10000000000
 
 agent = PCAgent(state_size=state_size, 
