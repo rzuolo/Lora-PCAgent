@@ -41,7 +41,7 @@ log_file = 'scenario_name_log_file.txt'
 time=datetime.now()
 format_time="%Y-%m-%d %H:%M:%S.%f"
 now=datetime.strptime(str(time),format_time)
-log_file = 'lora_log_file_'+str(now.year)+'-'+str(now.month)+'-'+str(now.day)+'-'+str(now.hour)+'-'+str(now.minute)
+log_file = 'lora_log_file-'+str(now.hour)+'-'+str(now.minute)
 
 # neural nets
 device = 'gpu'

@@ -191,7 +191,8 @@ class TrainingManager:
                         time=datetime.now()
                         format_time="%Y-%m-%d %H:%M:%S.%f"
                         now=datetime.strptime(str(time),format_time)
-                        model_file = 'saved_model_'+str(episode_reward)+str(now.year)+'-'+str(now.month)+'-'+str(now.day)+'-'+str(now.hour)+'-'+str(now.minute)+'-'+str(now.second)+'.pt'
+                        #model_file = 'saved_model_'+str(episode_reward)+str(now.year)+'-'+str(now.month)+'-'+str(now.day)+'-'+str(now.hour)+'-'+str(now.minute)+'-'+str(now.second)+'.pt'
+                        model_file = 'saved_model_'+str(episode_reward)+'-'+str(now.hour)+':'+str(now.minute)+'.pt'
                         print("Saving model ")
                         self.agent.actor_critic.save_model(model_file)
 
