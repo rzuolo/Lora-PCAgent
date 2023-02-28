@@ -113,6 +113,17 @@ class MaskedPointerNetwork(nn.Module):
                                 lstm_cell=True # LSTMCell
                                 )
 
+
+        for layer in self.encoder.children():
+            if hasattr(layer, 'reset_parameters'):
+                layer.reset_parameters()
+
+        for layer in self.decoder_cell.children():
+            if hasattr(layer, 'reset_parameters'):
+                layer.reset_parameters()
+
+
+
         # attention calculation paramaters see first lines in equation 3 in 
         # u^i_j = v^\top tanh(W_1 e_j + W_2 d_i), \forall j \in (1, \cdots, n)
         # where e_j and d_i are the encoder and decoder hidden states, respectively.

@@ -67,7 +67,13 @@ class Critic(nn.Module):
         
         #self.timedecoder = nn.Sequential(nn.Linear(8*hidden_size, 1))
                                          
-                
+        for layer in self.encoder.children():
+            if hasattr(layer, 'reset_parameters'):
+                layer.reset_parameters() 
+
+        for layer in self.decoder.children():
+            if hasattr(layer, 'reset_parameters'):
+                layer.reset_parameters()       
 
         
         # attention params
@@ -351,7 +357,15 @@ class ACDNN:
         #critic_loss = F.smooth_l1_loss(values.double(), discounted_r.detach())
 
         # actor loss
-        actor_loss = -( (log_probs + log_time_probs) * adv.detach()).mean()
+
+        #print("super_time_loss ",log_time_probs)
+        #print("super_log_loss ",log_probs)
+        actor_loss1 = -( (log_probs ) * adv.detach()).mean()
+        actor_loss2 = -( (log_time_probs) * adv.detach()).mean()
+        
+        #actor_loss = -( (log_time_probs) * adv.detach()).mean()
+        
+        
 
         #time_super_loss = entropy.mean()*times.mean() 
         #print("super_time_loss ",time_super_loss)
@@ -408,7 +422,7 @@ class ACDNN:
         #print(" critic_loss ", critic_loss)
 
         #loss = times.mean()
-        loss = actor_loss - entropy_factor * entropy + critic_loss 
+        loss = actor_loss1 - entropy_factor * entropy + actor_loss2 - entropy_factor * entropy + critic_loss 
         #loss = actor_loss - entropy_factor * entropy + (critic_loss * time_loss)
         #loss = actor_loss - entropy_factor * entropy + critic_loss + time_loss*0.00000001 
         #loss = actor_loss - entropy_factor * entropy + critic_loss + time_loss*1000000
@@ -493,6 +507,18 @@ class Time(nn.Module):
         #self.timedecoder = nn.Sequential(nn.Linear(8*hidden_size, 1))
         
         
+        for layer in self.encoder.children():
+            #layer.nn.init.xavier_normal_(m.weight)
+            #layer.nn.init.zeros_(m.bias)
+            if hasattr(layer, 'reset_parameters'):
+                layer.reset_parameters() 
+
+        for layer in self.decoder.children():
+            #layer.init.xavier_normal_(m.weight)
+            #layer.init.zeros_(m.bias)
+            #layer.weight.data.fill_(0)
+            if hasattr(layer, 'reset_parameters'):
+                layer.reset_parameters()       
               
 
         # attention params

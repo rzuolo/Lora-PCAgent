@@ -8,6 +8,7 @@ Created on Thu Feb  3 15:43:48 2022
 
 
 import numpy as np 
+import math
 from gym import Env,spaces
 
 
@@ -436,9 +437,10 @@ class LoraCollector232(Env):
         #    gain = 10
        
         #apply a penalty for every non profitable step
-        if gain == 0:
-            gain = -1*(self.visit_time)
-            
+        #if gain == 0:
+            #gain = -1*(self.visit_time)
+            #gain = -1*(math.sqrt(self.visit_time))
+
         ##update the reward
         #if gain > 0:
             #print("LOG4 This is the supposed reward ",reward)
