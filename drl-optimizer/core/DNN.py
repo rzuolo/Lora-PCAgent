@@ -304,131 +304,15 @@ class ACDNN:
         # normalize discounted_r
         # critic loss
 
-        #print(f'log_time_probs:{log_time_probs} log_probs:{log_probs}')
-        #print(f'values_size:{times.size()} values:{values}')
-        #times = times.squeeze(1)
-        #a,b = torch.max(times,dim=2)
-        #print(f'times_size:{times.size()} arg_times:{((torch.argmax(times,dim=2))/4)+0.25}')
-        #selected_idx=((torch.argmax(times,dim=2))+1)
-        
-        #print(f'times:{times}')
-        #a = torch.std(times,dim=2).unsqueeze(-1)
-        #times = a.squeeze(1)
-        #print(f'times22:{times}')
-        #a, b = torch.max(times,dim=2)
-        #times = a.unsqueeze(-1)
-        #times = a.unsqueeze(dim=-1)
-        #print(f'values_size:{times.size()} values:{values}')
-        #print(f'values:{values.size()}')
-        #print(f'discounted_size:{discounted_r.detach().size()} rewards:{discounted_r.detach()}')
-        #print(f'argmax:{((torch.argmax(times,dim=1).unsqueeze(dim=-1)))}')
-        #adv = (discounted_r.detach() - values ) * (25+(torch.argmax(times,dim=2)*25) )
-        
-        #adv = (discounted_r.detach() - values )
-        ####adv = (discounted_r.detach() - values + times)
-        #adv = (discounted_r.detach() - values) + (times/(selected_idx/4))
-        #print(f'selected:{selected_idx}')
-        #print(f'argmax:{selected_idx.size()} another:{times.size()} ')
-        #print(values) 
-        #adv = (discounted_r.detach() - (values / (selected_idx/4)) )
-        #print(f'argmax:{selected_idx} discounted:{times/(selected_idx/4)}')
-        #adv = (discounted_r.detach() - values + (times/(selected_idx/4)) )
         adv = ( discounted_r.detach() - values )
-        #adv = (discounted_r.detach() - values) / (times/(selected_idx/4))
-        #adv = (discounted_r.detach() - values) + times 
-        #adv = (discounted_r.detach())/(selected_idx/4) 
-        #adv = adv - values
-        #print("adv ",adv)
-
-        #times = times.squeeze(1)
-        #print(f'times.shape:{times.shape} times.std:{times.std()} times:{times}')
-        #maxtimes = torch.max(times,1).values.unsqueeze(1)
-
-        #print("maxtimes ",maxtimes)
-        #adv2 = times.std() #working somehow well
-        #adv2 = times.std() * adv.detach()
-        
-        #adv2 =(maxtimes - times.mean() ) * discounted_r.detach() ## this is doing well
-        #adv2 = discounted_r.detach() - torch.max(times,1).values.unsqueeze(1)
         
         critic_loss = 0.5 * adv.pow(2).mean()
-        #critic_loss = adv.mean()
-        
-        #critic_loss = F.smooth_l1_loss(values.double(), discounted_r.detach())
 
         # actor loss
-
-        #print("super_time_loss ",log_time_probs)
-        #print("super_log_loss ",log_probs)
         actor_loss1 = -( (log_probs ) * adv.detach()).mean()
         actor_loss2 = -( (log_time_probs) * adv.detach()).mean()
         
-        #actor_loss = -( (log_time_probs) * adv.detach()).mean()
-        
-        
-
-        #time_super_loss = entropy.mean()*times.mean() 
-        #print("super_time_loss ",time_super_loss)
-        #print(" Time super loss ", time_super_loss.mean())
-        # time loss
-        #time_loss = ((times.max()-times.mean())*discounted_r.detach().mean())
-        #time_loss = ((selected_idx/4))
-        #print("####################################################################")
-        
-        #### working with no fundamental rationale
-        ####
-        #delta = times-times.mean() 
-        #delta = delta.pow(2).mean()
-        #time_loss = delta.mean()*adv.detach().mean()
-        ######
-        ######
-
-        #delta = times.mean() 
-        #time_loss = 0.5 * adv2.pow(2).mean()
-        #time_loss =  adv2.mean()
-        #time_loss = times.mean()
-        #print(times,times.mean())
-        #delta = times * discounted_r.detach().mean()
-        
-
-        #time_loss = delta.mean()
-        #print(float(time_loss))
-        #print(critic_loss)
-        #time_loss = delta
-        #time_loss = delta.mean()*critic_loss
-        #### 
-        ## 
-        #time_loss = a*discounted_r.detach().mean()
-
-        #print(time_loss)
-        #print(a)
-        #print(discounted_r.detach().size())
-        #print(adv.size())
-        #print("####################################################################")
-        #time_loss = (times.mean()*0.0001*discounted_r.detach().mean())
-         
-        #time_loss = ((times.max()-times.mean())*adv.detach().mean())
-        #print("time_loss ",times.mean()*discounted_r.mean())
-
-        #time_loss = time_super_loss.mean()*discounted_r.mean()
-        #time_loss = (times.mean()*adv.detach().mean())
-        #time_loss =  times.mean()*adv.mean() 
-        #time_loss = time_loss.detach()
-        #time_loss = -(times * adv.detach()).mean()
-        #print(" Advantage ",adv)
-        #print(" reward ", discounted_r.detach().mean())
-        #print(" adv ", adv.detach().mean())
-        #print(" timeloss ", time_loss)
-        #print(" critic_loss ", critic_loss)
-
-        #loss = times.mean()
-        loss = actor_loss1 - entropy_factor * entropy + actor_loss2 - entropy_factor * entropy + critic_loss 
-        #loss = actor_loss - entropy_factor * entropy + (critic_loss * time_loss)
-        #loss = actor_loss - entropy_factor * entropy + critic_loss + time_loss*0.00000001 
-        #loss = actor_loss - entropy_factor * entropy + critic_loss + time_loss*1000000
-        #loss = time_loss 
-        #print(" detached ",discounted_r.detach())
-        #print(" values ",values)
+        loss = (actor_loss1 - entropy_factor * entropy) + (actor_loss2 - entropy_factor * entropy) + critic_loss 
         
         # reset grads
         self.model.optimizer.zero_grad()
@@ -495,7 +379,7 @@ class Time(nn.Module):
                                     #nn.ReLU(),
                                     #nn.Linear(4*hidden_size, 4*hidden_size),
                                     #nn.ReLU(),
-                                    nn.Linear(2*hidden_size, 4),
+                                    nn.Linear(2*hidden_size, 40),
                                     nn.Softmax())
                                     
                                     #nn.ReLU(),
