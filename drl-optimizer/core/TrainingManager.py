@@ -55,7 +55,8 @@ class TrainingManager:
     def timestep_converter(self,timetensor):
        
 
-        timestep_length = ((int(timetensor)*25) + 25)
+        #timestep_length = ((int(timetensor)*25) + 25)
+        timestep_length = pow(5,int(timetensor))
         ##print("Timestep length ",timestep_length)
         #timestep_index = int(torch.argmax(timetensor))
         #print("index now is ",timestep_index)

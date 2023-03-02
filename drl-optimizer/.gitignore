@@ -2,7 +2,8 @@ scenario_name_log_file.txt
 lora_log*
 notes*
 good*
-
+*.pyo
+*.pyc
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

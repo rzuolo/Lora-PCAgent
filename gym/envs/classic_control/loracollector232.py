@@ -130,7 +130,7 @@ class LoraCollector232(Env):
         ################################################################### 
         ### set maximum values to be used during input normalization
         ###
-        self.max_costtime = 4
+        #self.max_costtime = 4
         self.max_buffer   = self.max_load
         self.max_earliest = self.max_tick + 1
         
@@ -172,7 +172,6 @@ class LoraCollector232(Env):
         ### to be colleceted from every cluster
         for cluster in range(self.actions_available):
             self.state[cluster][4] = self.normalize_input(self.total_expected_volume(cluster),self.max_load)            
-         
         return self.state, self.masks
     
 
@@ -218,11 +217,16 @@ class LoraCollector232(Env):
             self.checked[node] = 1 
             self.tick_update(time)
             points=0
+            
+            ### check or a packet in the exact at the top of the interal limits
+            ###
             if  ((time*5)-self.node_freq[vertex][node]) % (self.period) == 0:
                 points=points+1    
             #if  ((((time*5+wait)-self.node_freq[vertex][node]) % (self.period) == 0) and (wait !=0)):
             #    points=points+1    
             
+            ### check packets receveid within the time range
+            ##
             a = int((time*5-(self.node_freq[vertex][node]))/(self.period))
             b = int((((time+wait)*5)-self.node_freq[vertex][node])/(self.period))
             points = points + int(b-a)
@@ -401,7 +405,6 @@ class LoraCollector232(Env):
             if self.vertices[pos_going] == 1:
                 if time_going <= self.max_time:
                      gain  = gain + self.sender_active(time_going,node,pos_going,self.visit_time)
-                
                      
             ## If the position the gateways is edge
             ## confirm if the data upload matches the requirements
@@ -410,11 +413,13 @@ class LoraCollector232(Env):
                if  time_going <= self.max_time:
                      gain = gain + self.dump_buffer(time_going)
                      self.buffer = 0 
-               
+                     #gain = gain/self.visit_time                
+                     break  #we can stop searching as the upload occurs only once 
                
                
         ### update the remaining bytes to be collected in each cluster
         ### or update the amount of uploaded bytes on each depot
+        ### this updates the amount remaining on each cluster (line number of the matrix state)
         if self.vertices[pos_going] == 1:
             #print("subtraindo ganhos", self.state[pos_going][4]-self.normalize_input(gain,self.max_volume))
             #print("subtraindo ganhos", 500*self.state[pos_going][4],"Ganho de ",gain)
@@ -422,7 +427,8 @@ class LoraCollector232(Env):
         else:
             self.state[pos_going][4] = self.state[pos_going][4] + self.normalize_input(gain,self.max_volume)
             
-        #update the buffer number with the amount of data corresponding that cluster (line number in the state matrix) 
+        #update the buffer number with the amount of data corresponding that cluster (line number in the state matrix)
+        #the bytes scorer obtained in that cluster (matri state line number) so far
         self.state[pos_going][2] = self.state[pos_going][2] + self.normalize_input(gain,self.max_buffer)
         
         ##convert it back into the state format and store ttl to it
@@ -437,15 +443,15 @@ class LoraCollector232(Env):
         #    gain = 10
        
         #apply a penalty for every non profitable step
-        if gain == 0:
-            gain = -0.5
+        #if gain == 0:
+        #    gain = -10
         #else:
-        #    gain = gain*self.visit_time
+        #gain = gain*self.visit_time
 
         ##update the reward
         #if gain > 0:
             #print("LOG4 This is the supposed reward ",reward)
-        self.total_reward = self.total_reward + gain
+        #self.total_reward = self.total_reward + gain
         
         ##confirm the end of the game
 #        if np.count_nonzero(self.game_over) == self.gateways_available:
@@ -458,6 +464,7 @@ class LoraCollector232(Env):
         else:
             over = 0    
         
+
         #terunt the steps output
         #print ("Action taken ",pos_going, self.masks)
         return self.state,gain,over, self.masks 
@@ -470,18 +477,24 @@ class LoraCollector232(Env):
         if coming == going:
 #            print("Do nothing, stays at same position")
             new_state_idx = coming
+            self.time_elapsed = self.time_elapsed + 1 + wait
+            return new_state_idx,self.time_elapsed 
         else:
             new_state_idx = going 
         
         ## this is valid if new_time is based on the elapsed time
         
-        if self.vertices[going] == 1:
-            new_time_idx = self.time_elapsed + self.trip_time(coming,going) + 1 + wait #using a wait time of 20    
+        ### This check is no longer valid with variable timestep. 
+        ### The waiting time needs to be learned by the agent
+        ### I using the DQN, we need to uncomment these
+        #if self.vertices[going] == 1:
+            #new_time_idx = self.time_elapsed + self.trip_time(coming,going) + 1 + wait #using a wait time of 20    
             #print(" Going ",self.time_elapsed,self.trip_time(coming,going),wait,coming,going,new_time_idx)
-        else:
-            new_time_idx = self.time_elapsed + self.trip_time(coming,going) + 1 #using a wait time of 20    
-        ## in this new version, the time is simply the cost to moving between vertices
-        #new_time_idx = self.trip_time(coming,going) + 1    
+        #else:
+        #    new_time_idx = self.time_elapsed + self.trip_time(coming,going) + 1 #using a wait time of 20    
+        
+        ## in this new PCAgent version, the time is simply the cost to moving between vertices + wait
+        new_time_idx = self.time_elapsed + self.trip_time(coming,going) + 1 + wait #using a wait time of 20    
        
         if new_time_idx >= self.max_time:
              new_time_idx = self.max_time

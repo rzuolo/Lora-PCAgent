@@ -44,18 +44,18 @@ now=datetime.strptime(str(time),format_time)
 log_file = 'lora_log_file-'+str(now.hour)+'-'+str(now.minute)
 
 # neural nets
-device = 'gpu'
+device = 'cpu'
 #lr = 0.0001
 #lr = 0.00000000000000000000001
 
-lr = 0.0001
+lr = 0.001
 
 actor_critic = ACDNN(
             in_features=5,
             #hidden_size=1848,
             #hidden_size=2048,
-            hidden_size=1024,
-            #hidden_size=128,
+            #hidden_size=1024,
+            hidden_size=128,
             #hidden_size=256,
             #hidden_size=512,
             #hidden_size=64,
@@ -67,7 +67,7 @@ discount_factor = 0.99
 #entropy_factor = 0.1
 #entropy_factor = 0.001
 #entropy_factor = 0.0001
-entropy_factor = 0.001
+entropy_factor = 0.0001
 #entropy_factor = 0.00001
 #entropy_factor = 1
 #entropy_factor = 10000000000
