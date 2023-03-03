@@ -47,7 +47,6 @@ class Critic(nn.Module):
                 device = 'cuda:0'
         self.device = device
 
-
         # encoder/decoder
         # embedding_layer=nn.Conv1d(in_features, hidden_size, 1, 1),
         # embedding_layer=nn.Linear(in_features=in_features, out_features=hidden_size),
@@ -81,49 +80,16 @@ class Critic(nn.Module):
         # self.W_2 = nn.Linear(in_features=hidden_size, out_features=hidden_size)
         # self.v = nn.Linear(in_features=hidden_size, out_features=1)
         self.process_block =Attention(hidden_size, use_tanh=False)
-        # put into device
-        self.to(self.device)
 
-
-    def sigmoid(self, z):
-        return 1 / (1 + np.exp(-z))
-
-    def tanh(self, z):
-        return np.tanh(z)
 
     def forward(self, state, encoder_output, h_n, embdds):
-        
-        
-        #v2 = self.timedecoder(torch.reshape(embdds, (1,(8*self.hidden_size))))
         
         # call encoder, it will take care of state initialization
         encoder_output, (h_n, c_n), embdds = self.encoder(state) # it returns output, hidden, embed
 
-        #print( "hn size ",h_n.size())
-        #print( "encoder_output inside loop ",encoder_output, encoder_output.size())
-        #print( "embedds ",embdds.size())
-        #print( "cn ",c_n.size())
-       
-        
-        #print(" encoder_output ",encoder_output[0,:,0])
-        # process block loop
-        #q = h_n.squeeze(0) # hidden state
+
+        #print("encoder output",encoder_output,encoder_output.size())
         q = torch.reshape(h_n, (1, 2*self.hidden_size)) # hidden state
-        
-        #q2 = torch.reshape(h_n, (1, 2*self.hidden_size)) # hidden state
-        
-        #v2 = self.timedecoder(q)
-        
-        #print("Sigmoid 1",float(v2))
-        #print("Sigmoid 2",float(F.sigmoid(v2)))
-        #print("Tan ", float(F.tanh(v2)))
-        
-        #print(self.sigmoid(float(v2)))
-        #print(self.tanh(float(v2)))
-        #print(" Timedecoder ", v2)
-        
-        #v2 = self.tanh(float(v2))
-        
         
         for _ in range(self.num_process_blocks):
             ref, u = self.process_block(q, encoder_output)
@@ -132,7 +98,6 @@ class Critic(nn.Module):
         # decode query
         v = self.decoder(q) # decoder_output is the value function of the critic
 
-        #print("critic ",float(v))
         return v
         
 
@@ -197,22 +162,12 @@ class PointerCriticArch(nn.Module):
         
         probs, act, _, encoder_output, h_n, embdds = self.pointer(state, masks)
         
-        #print("Encoder ",encoder_output, encoder_output.size())
-        #print("Embdds ",embdds, embdds.size())
-        #something = torch.reshape(encoder_output, (1, 16*self.hidden_size))
-        #print("Encoder ",something, something.size())
-        
-        #print("Masks ",masks)
-        
-              
         probs = probs.squeeze(0).squeeze(-1)
         #v, time = self.critic(state, encoder_output, h_n, embdds).squeeze(-1)
         
         v    = self.critic(state, encoder_output, h_n, embdds)
         time, time_probs = self.time(state, encoder_output, h_n, embdds)
         
-        #time = 100
-        #v = 0
         return v, probs, act, time, time_probs
     
 
@@ -238,10 +193,6 @@ class ACDNN:
         
     def predict(self, source, masks):
         v, probs, _, time, time_probs = self.model(source, masks)
-        #### add time influence onto v
-        #print(f'v before:{v} time:{time}')
-        #v = (v/((torch.argmax(time)/4)+0.25))
-        #print(f'v after:{v2} time:{time}')
         return v.detach().cpu().item(), probs.detach().cpu().numpy()
         #return v.detach().cpu().item(), time.detach().cpu().item(), probs.detach().cpu().numpy(), time_probs.detach().cpu().numpy()
     
@@ -253,8 +204,6 @@ class ACDNN:
         #action = dist.sample(). this is used during the training
         action = dist.sample()
         time = dist_time.sample ()
-        #time = dist.sample()
-        #action = torch.argmax(probs)
         return v.detach().cpu().item(), probs.detach().cpu().numpy(), action.detach().cpu().item(), time, time_probs.detach().cpu().numpy()
 
     def collect(self, source, masks):
@@ -369,27 +318,13 @@ class Time(nn.Module):
                                 )
 
         # encoder is two hidden linear layers as in https://arxiv.org/pdf/1611.09940.pdf
-        #self.decoder = nn.Sequential(nn.Linear(2*hidden_size, 2*hidden_size),
-        #                            nn.ReLU(),
-        #                            nn.Linear(2*hidden_size, 4))
-        
         self.decoder = nn.Sequential(nn.Linear(2*hidden_size, 2*hidden_size),
                                     nn.ReLU(),
-                                    #nn.Linear(2*hidden_size, 2*hidden_size),
-                                    #nn.ReLU(),
-                                    #nn.Linear(4*hidden_size, 4*hidden_size),
-                                    #nn.ReLU(),
-                                    nn.Linear(2*hidden_size, 40),
+                                    nn.Linear(2*hidden_size, 4),
                                     nn.Softmax())
-                                    
-                                    #nn.ReLU(),
-                                    #nn.Tanh())
-                                    #nn.Sigmoid())
-
 
         
         #self.timedecoder = nn.Sequential(nn.Linear(8*hidden_size, 1))
-        
         
         for layer in self.encoder.children():
             #layer.nn.init.xavier_normal_(m.weight)
@@ -403,7 +338,6 @@ class Time(nn.Module):
             #layer.weight.data.fill_(0)
             if hasattr(layer, 'reset_parameters'):
                 layer.reset_parameters()       
-              
 
         # attention params
         # self.W_1 = nn.Conv1d(hidden_size, hidden_size, 1, 1)
@@ -413,70 +347,28 @@ class Time(nn.Module):
         # put into device
         self.to(self.device)
         
-        
-
-
-    #def sigmoid(self, z):
-    #    return 1 / (1 + np.exp(-z))
-
-    #def tanh(self, z):
-    #    return np.tanh(z)
-    
-    #def tanh(self, z):
-    #    return np.tanh(z)
 
     def forward(self, state, encoder_output, h_n, embdds):
         
         
-        #v2 = self.timedecoder(torch.reshape(embdds, (1,(8*self.hidden_size))))
         
         # call encoder, it will take care of state initialization
         encoder_output, (h_n, c_n), embdds = self.encoder(state) # it returns output, hidden, embed
 
-        #print( "hn size ",h_n.size())
-        #print( "encoder_output inside loop ",encoder_output, encoder_output.size())
-        #print( "embedds ",embdds.size())
-        #print( "cn ",c_n.size())
-       
-        
-        #print(" encoder_output ",encoder_output[0,:,0])
-        # process block loop
-        #q = h_n.squeeze(0) # hidden state
         q = torch.reshape(h_n, (1, 2*self.hidden_size)) # hidden state
         
-        #q2 = torch.reshape(h_n, (1, 2*self.hidden_size)) # hidden state
         
-        #v2 = self.timedecoder(q)
-        
-        #print("Sigmoid 1",float(v2))
-        #print("Sigmoid 2",float(F.sigmoid(v2)))
-        #print("Tan ", float(F.tanh(v2)))
-        
-        #print(self.sigmoid(float(v2)))
-        #print(self.tanh(float(v2)))
-        #print(" Timedecoder ", v2)
-        
-        #v2 = self.tanh(float(v2))
-        
-        
-        for _ in range(self.num_process_blocks):
-            ref, u = self.process_block(q, encoder_output)
-            q = torch.bmm(ref,F.softmax(u, dim=1).unsqueeze(-1)).squeeze(-1)
+        #print("antes decoder output",q,q.size())
+        #for _ in range(self.num_process_blocks):
+        #    ref, u = self.process_block(q, encoder_output)
+        #    q = torch.bmm(ref,F.softmax(u, dim=1).unsqueeze(-1)).squeeze(-1)
+        #
+        #print("depois decoder output",q,q.size())
 
         # decode query
         time_probs = self.decoder(q) # decoder_output is the value function of the critic
         time = int(time_probs.argmax())
-
-        #print(" V em quatro ",v.detach())
-        #print(" V em index ", torch.argmax(v))
-        #print(" V em softmax ", F.softmax(v,dim=1).detach()) 
-        #v = int(torch.argmax(v))
-        #v = torch.sigmoid(v)
-        #v = math.log(v)
-        #v = torch.tanh(v.detach().cpu())
-        #print(" v ",torch.tanh(torch.max(v)))
-        #print("Time ",v)
-        #print("Time mean",float(v.mean()))
+        
         return time, time_probs
 
 

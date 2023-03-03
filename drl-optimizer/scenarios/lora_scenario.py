@@ -48,7 +48,7 @@ device = 'cpu'
 #lr = 0.0001
 #lr = 0.00000000000000000000001
 
-lr = 0.001
+lr = 0.000001
 
 actor_critic = ACDNN(
             in_features=5,
