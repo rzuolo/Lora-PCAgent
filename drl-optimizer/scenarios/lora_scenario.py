@@ -34,7 +34,7 @@ action_type = np.int16
 ####### training options to be used by the training manager #######
 #num_episodes = 20000
 num_episodes = 30000
-episode_length = 30
+episode_length = 300
 
 log_file = 'scenario_name_log_file.txt'
 
@@ -44,20 +44,21 @@ now=datetime.strptime(str(time),format_time)
 log_file = 'lora_log_file-'+str(now.hour)+'-'+str(now.minute)
 
 # neural nets
-device = 'cpu'
+device = 'gpu'
 #lr = 0.0001
 #lr = 0.00000000000000000000001
 
-lr = 0.000001
+lr = 0.0001
+
 
 actor_critic = ACDNN(
             in_features=5,
             #hidden_size=1848,
             #hidden_size=2048,
             #hidden_size=1024,
-            hidden_size=128,
+            #hidden_size=128,
             #hidden_size=256,
-            #hidden_size=512,
+            hidden_size=512,
             #hidden_size=64,
             lr=lr,
             device=device)

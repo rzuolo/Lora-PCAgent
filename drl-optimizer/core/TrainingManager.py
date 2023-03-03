@@ -55,8 +55,8 @@ class TrainingManager:
     def timestep_converter(self,timetensor):
        
         #timestep_length = ((int(timetensor)*25) + 25)
-        timestep_length = pow(5,int(timetensor))
-        #timestep_length = (int(timetensor)*5)
+        #timestep_length = pow(5,int(timetensor))
+        timestep_length = (int(timetensor)*10)
 
         return timestep_length
 
