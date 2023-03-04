@@ -34,7 +34,7 @@ action_type = np.int16
 ####### training options to be used by the training manager #######
 #num_episodes = 20000
 num_episodes = 30000
-episode_length = 30
+episode_length = 300
 
 log_file = 'scenario_name_log_file.txt'
 
@@ -48,7 +48,7 @@ device = 'cpu'
 #lr = 0.0001
 #lr = 0.00000000000000000000001
 
-lr = 0.000001
+lr = 0.0001
 
 actor_critic = ACDNN(
             in_features=5,
