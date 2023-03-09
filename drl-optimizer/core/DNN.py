@@ -320,7 +320,7 @@ class Time(nn.Module):
         # encoder is two hidden linear layers as in https://arxiv.org/pdf/1611.09940.pdf
         self.decoder = nn.Sequential(nn.Linear(2*hidden_size, 2*hidden_size),
                                     nn.ReLU(),
-                                    nn.Linear(2*hidden_size, 4),
+                                    nn.Linear(2*hidden_size, 10),
                                     nn.Softmax())
 
         

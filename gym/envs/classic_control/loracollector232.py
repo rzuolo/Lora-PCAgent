@@ -38,7 +38,7 @@ class LoraCollector232(Env):
         #self.max_time = 862 #game time insteps
         self.max_time = 812 #game time insteps
         #self.max_time = 868
-        self.max_tick = 540 #ttl in timesteps
+        self.max_tick = 510 #ttl in timesteps
         self.max_cargo = 3000 #maximum allowed buffer (large number because is not in use currently)
         self.period =  200  #app period in seconds (this is the frequency that every node will be sending packets).
         self.time_elapsed = 0 #time elapsed (in timesteps) of the game
@@ -232,8 +232,9 @@ class LoraCollector232(Env):
             points = points + int(b-a)
             
             
-        #and (   ((time*5) % (self.period) <= 5) )):
-        #if ( time % node_freq[node-1]) <= (time-5):
+        ######validate if the packets are valid
+        ######Each node will have a certain ammount of pakcets/bytes to send
+        #####Anything exceeding that value will be ignored.       
             if (points > 0) and (self.visited[node]  < self.node_target[node]) :
                 if (self.visited[node] + points) <= self.node_target[node]:
                     self.buffer = self.buffer + (self.node_payload[node] * points)
@@ -249,18 +250,6 @@ class LoraCollector232(Env):
         else:
               return 0
                
-            
-                    #print("LOG5 The sender interval is active ",node," Gateway ", 0 ," payload ",self.node_payload[node]," time ",time, " position ",self.state[0]," visitado ", self.visited[node], " target ", self.node_target[node])
-                    #print("LOG5 Node is ",node, " and time is ",time, " ", (self.node_freq[vertex][node])+self.period, " and pos is ", vertex)
-                    #print ("LOG5 This is the points ", points)
-                    #print ("LOG5 This is the freq ",(self.node_freq[vertex][node]*60)/5)
-                    #print ("LOG5 This is start time ",(self.node_freq[vertex][node]))
-                    #print ("LOG5 This is the real time ", time*5)
-                    #print ("LOG5 This is the real endtime ", ((wait+time)*5))
-                    #print ("LOG5 This is the real return ", ((10)*points))
-                    # print ("LOG5 Target, Achieved", self.node_target[node], self.visited[node])
-    #                return self.node_payload[node]
-            
             
               
         
@@ -342,7 +331,6 @@ class LoraCollector232(Env):
         time_going  = 0 
         pos_going   = 0
         
-        
         gain = 0
         #matrix update
                 
@@ -352,7 +340,6 @@ class LoraCollector232(Env):
         #Ontain the action selected accoding to the mask
         turn = self.decouple_mask(self.masks)
         
-        
         ## confirm the values of the state it is moving from (time_coming,pos_coming)
         for x in range(8): 
             if self.state[x][0] == 1:
@@ -360,7 +347,6 @@ class LoraCollector232(Env):
                 #time_coming = self.state[x][1] ## remove this if time difference is based on unit step costs
         #version based on cost time         
         time_coming = self.time_elapsed  
-        
         
         pos_going,time_going = self.move(time_coming,pos_coming,turn,self.visit_time) #moving to new position and time
         #print("LOG7 timecoming ",timecoming[turn]," poscoming ", coming[turn])
@@ -373,7 +359,6 @@ class LoraCollector232(Env):
         
         #update the new time current cost + time elpased so far
         #self.time_elapsed = self.time_elapsed + time_going
-
                   
         time_going_normalized = self.normalize_input(time_going,self.max_time)
         #print("Time going", time_going, " time going normalized ", time_going_normalized )
@@ -384,8 +369,6 @@ class LoraCollector232(Env):
             self.state[x][1] = time_going_normalized
             #self.state[x][1] = time_going 
         self.state[pos_going][0] = 1 
-
-       
         
         ###############################################
         ###############################################
@@ -421,8 +404,6 @@ class LoraCollector232(Env):
         ### or update the amount of uploaded bytes on each depot
         ### this updates the amount remaining on each cluster (line number of the matrix state)
         if self.vertices[pos_going] == 1:
-            #print("subtraindo ganhos", self.state[pos_going][4]-self.normalize_input(gain,self.max_volume))
-            #print("subtraindo ganhos", 500*self.state[pos_going][4],"Ganho de ",gain)
             self.state[pos_going][4] = self.state[pos_going][4] - self.normalize_input(gain,self.max_volume)         
         else:
             self.state[pos_going][4] = self.state[pos_going][4] + self.normalize_input(gain,self.max_volume)
@@ -436,38 +417,23 @@ class LoraCollector232(Env):
             self.state[x][3] = self.normalize_input(self.earliest,self.max_earliest)
         #self.state[len(self.state)-1] = turn
         
-        ### dummy execution to prove convergence
-        #if pos_going == 5:
-        #    gain = -20
-        #else:
-        #    gain = 10
-       
-        #apply a penalty for every non profitable step
-        #if gain == 0:
-        #    gain = -10
-        #else:
-        #gain = gain*self.visit_time
-
-        ##update the reward
-        #if gain > 0:
-            #print("LOG4 This is the supposed reward ",reward)
-        #self.total_reward = self.total_reward + gain
-        
-        ##confirm the end of the game
-#        if np.count_nonzero(self.game_over) == self.gateways_available:
-#            over = 1
-#        else:
-#            over = 0
-#        
         if (self.game_over[0] == 1):
             over = 1
         else:
             over = 0    
-        
+   
+        points = gain 
 
+        if self.visit_time != 0:
+            gain = gain/self.visit_time
+        
+        if gain == 0:
+            gain = -100
+        
+        mask_points = [self.masks,points]
         #terunt the steps output
         #print ("Action taken ",pos_going, self.masks)
-        return self.state,gain,over, self.masks 
+        return self.state,gain,over,mask_points 
     
       
     
@@ -475,9 +441,14 @@ class LoraCollector232(Env):
     def move(self,time_coming,coming,going,wait):
               
         if coming == going:
-#            print("Do nothing, stays at same position")
+#           print("Do nothing, stays at same position")
+            new_time_idx = self.time_elapsed + 1 + wait #using a wait time of 20    
+            if new_time_idx >= self.max_time:
+                new_time_idx = self.max_time
+                self.game_over[0] = 1 #this code was changed for multiple gws to a single gateway. Now this tensor has only one element wihch is [0]       
+
             new_state_idx = coming
-            self.time_elapsed = self.time_elapsed + 1 + wait
+            self.time_elapsed = new_time_idx
             return new_state_idx,self.time_elapsed 
         else:
             new_state_idx = going 

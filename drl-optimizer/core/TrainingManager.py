@@ -55,8 +55,9 @@ class TrainingManager:
     def timestep_converter(self,timetensor):
        
         #timestep_length = ((int(timetensor)*25) + 25)
-        timestep_length = pow(5,int(timetensor))
+        #timestep_length = pow(5,int(timetensor))
         #timestep_length = (int(timetensor)*5)
+        timestep_length = (int(timetensor)*20)
 
         return timestep_length
 
@@ -84,6 +85,7 @@ class TrainingManager:
         # do the magic here, i.e., the main training loop
         last_rewards = deque(maxlen=self.average_reward_steps)
         all_rewards = []
+        all_points = []
         all_average_reward = []
         total_steps = 0
         episode_repetition = 0 
@@ -95,15 +97,7 @@ class TrainingManager:
                 # 3 get first action
                 action, timetensor = self.agent.get_policy_action(state, masks)
                 
-                ########################################################
-                ### Adpatation to define a timestep of 20 or 100 units
-                #if time <= 0:
-                #    time = 20 
-                #else:
-                #    time = 100
                 time = self.timestep_converter(timetensor)
-                #if time < 20:
-                #    time = 20
                 vaction = [action,time]
                 ########################################################
                 ########################################################
@@ -113,9 +107,12 @@ class TrainingManager:
                 step = 1
                 epsiode_done = False
                 episode_reward = 0
+                episode_points = 0 
                 episode_reward_repetition = 0
                 actions_list = []
                 time_list = []
+                points_list = []
+                reward_list = []
                 extra_signals_list =[]
                 while not epsiode_done and step < self.episode_length:
                     # record actions
@@ -123,13 +120,14 @@ class TrainingManager:
                     time_list.append(time)
                     # call step function in the environement
                     state_, reward, done, extra_signals = self.env.step(vaction)
-                     
                     
-                    #print("That is one state \n", state)
-                    #print("This is one action-reward \n", action, reward)
-                    #print(" this is done ", done, " episode ", step)
+                    extra_signals, points = extra_signals
+                    points_list.append(int(points))
+                    reward_list.append(int(reward))
                     
                     episode_reward += reward
+                    episode_points += points
+                    
                     if done == 1:
                         epsiode_done = True
                     extra_signals_list.append(extra_signals)
@@ -139,15 +137,8 @@ class TrainingManager:
                     state = state_
                     action, timetensor = self.agent.get_policy_action(state, extra_signals)
                     ########################################################
-                    ### Adpatation to define a timestep of 20 or 100 units
-                    #if time <= 0:
-                    #    time = 20 
-                    #else:
-                    #    time = 100
                     
                     time = self.timestep_converter(timetensor)
-                    #if time < 20:
-                    #    time = 20
                     vaction = [action,time]
                     ########################################################
                     ########################################################
@@ -170,7 +161,7 @@ class TrainingManager:
                     #    result.append(int(i - j))
                     #print(result)
                     
-                    print('Episode:{}\treward:{}\tsteps:{}'.format(i, episode_reward, step))
+                    print('Episode:{}\treward:{}\tpoints:{}\tsteps:{}'.format(i, int(episode_reward), episode_points, step))
                     
                     
                     self.agent.actor_critic.rep = 0
@@ -206,16 +197,39 @@ class TrainingManager:
                     #    self.agent.actor_critic.save_model("./modelsaved.pt")
                 
                 all_rewards.append(episode_reward)
+                all_points.append(episode_points)
                 last_rewards.append(episode_reward)
                 average_reward = sum(last_rewards)/self.average_reward_steps
                 all_average_reward.append(average_reward)
-                log.write(str(i) +" "+ str(step)+ "\t" + str(episode_reward)+ "\t" + str(average_reward) + "\tActions list:" + str(actions_list) + "\n")
-                log.write(str(i) +" "+ str(step)+ "\t" + str(episode_reward)+ "\t" + str(average_reward) + "\tTime list:" + str(time_list) + "\n")
+                log.write("########################################################\n")
+                log.write(str(i) +" rounds  "+ str(step)+ " steps \t" +str(episode_points)+"\t"+str(episode_reward)+ "\t" + str(average_reward) + "\n") 
+                log.write("\tActions list:" + str(actions_list) + "\n")
+                log.write("\tBytes s list:" + str(points_list) + "\n")
+                log.write("\tReward  list:" + str(reward_list) + "\n")
+                log.write("\tTimes   list:" + str(time_list) + "\n")
+                #log.write(str(i) +" "+ str(step)+ "\t" + str(episode_points)+ "\t" + str(average_reward) + "\tPoints list:" + str(points_list) + "\n")
+                #log.write(str(i) +" "+ str(step)+ "\t" + str(episode_points)+ "\t" + str(average_reward) + "\tPoints list:" + str(reward_list) + "\n")
+                #log.write(str(i) +" "+ str(step)+ "\t" + str(episode_reward)+ "\t" + str(average_reward) + "\tTime list:" + str(time_list) + "\n")
                 log.flush()
         
         self.agent.actor_critic.save_model("./modelsaved.pt")
         return all_rewards, all_average_reward
 
+
+##########################################################################################################################################################################################################################
+##########################################################################################################################################################################################################################
+##########################################################################################################################################################################################################################
+##########################################################################################################################################################################################################################
+##########################################################################################################################################################################################################################
+##########################################################################################################################################################################################################################
+##########################################################################################################################################################################################################################
+##########################################################################################################################################################################################################################
+##########################################################################################################################################################################################################################
+##########################################################################################################################################################################################################################
+##########################################################################################################################################################################################################################
+##########################################################################################################################################################################################################################
+##########################################################################################################################################################################################################################
+##########################################################################################################################################################################################################################
 
 
     def test(self, worldrecord, verbose=False, plot=False, save_to_file=True, parallel=False):
@@ -248,6 +262,7 @@ class TrainingManager:
         # do the magic here, i.e., the main training loop
         last_rewards = deque(maxlen=self.average_reward_steps)
         all_rewards = []
+        all_points = []
         all_average_reward = []
         all_extra_signals = []
         total_steps = 0
@@ -269,18 +284,28 @@ class TrainingManager:
                 step = 1
                 epsiode_done = False
                 episode_reward = 0
+                episode_points = 0
                 actions_list = []
                 time_list = []
+                points_list = []
+                reward_list = []
                 extra_signals_list =[]
                 while not epsiode_done and step < self.episode_length:
                     # record actions
                     actions_list.append(action)
                     time_list.append(time)
                     # call step function in the environement
-                    state_, reward, done, extra_signals = self.env.step(vaction)
-                    #masks, jfi, thu = extra_signals
+                    state_, reward, done, aux_extra_signals = self.env.step(vaction)
+                    
+                    extra_signals, points = aux_extra_signals
+                    
+                    points_list.append(points)
+                    reward_list.append(reward)
+
                     #extra_signals = (jfi, thu)
                     episode_reward += reward
+                    episode_points += points 
+
                     if done == 1:
                         epsiode_done = True
                     extra_signals_list.append(extra_signals)
@@ -292,15 +317,25 @@ class TrainingManager:
                     step += 1
                     total_steps += 1
                 if verbose:
-                    print('Episode:{}\treward:{}\tsteps:{}'.format(i, episode_reward, step))
+                    print('Episode:{}\tBytes:{}\treward:{}\tsteps:{}'.format(i, int(episode_points),int(episode_reward), step))
                 all_rewards.append(episode_reward)
+                all_points.append(episode_points)
                 last_rewards.append(episode_reward)
                 average_reward = sum(last_rewards)/self.average_reward_steps
                 all_average_reward.append(average_reward)
                 all_extra_signals.append([sum(x)/step for x in zip(*extra_signals_list)])
-                log.write(str(step)+ "\t" + str(episode_reward)+ "\t" + str(average_reward) + "\tActions list:" + str(actions_list) + "\n")
-                log.write(str(step)+ "\t" + str(episode_reward)+ "\t" + str(average_reward) + "\tTime list:" + str(time_list) + "\n")
-                log.write(str(extra_signals_list) + '\n')
+                log.write("########################################################\n")
+                log.write(str(i) +" rounds  "+ str(step)+ " steps \t" +str(episode_points)+"\t"+str(episode_reward)+ "\t" + str(average_reward) + "\n")
+                log.write("\tActions list:" + str(actions_list) + "\n")
+                log.write("\tBytes s list:" + str(points_list) + "\n")
+                log.write("\tReward  list:" + str(reward_list) + "\n")
+                log.write("\tTimes   list:" + str(time_list) + "\n")
+
+                #log.write(str(step)+ "\t" + str(episode_reward)+ "\t" + str(average_reward) + "\tActions list:" + str(actions_list) + "\n")
+                #log.write(str(step)+ "\t" + str(episode_reward)+ "\t" + str(average_reward) + "\tPoints list:" + str(points_list) + "\n")
+                #log.write(str(step)+ "\t" + str(episode_reward)+ "\t" + str(average_reward) + "\tReward list:" + str(reward_list) + "\n")
+                #log.write(str(step)+ "\t" + str(episode_reward)+ "\t" + str(average_reward) + "\tTime list:" + str(time_list) + "\n")
+                #log.write(str(extra_signals_list) + '\n')
                 #log.write(str(step)+ "\t" + str(episode_reward)+ "\t" + str(average_reward) + "\n")
                 log.flush()
 
